@@ -52,8 +52,18 @@
 
     <nav>
         <ul>
-            <li><a href="https://rakibmia7254.github.io/ctrip-docs/" target="_blank">Go to Docs</a></li>
+            <li><a href="/docs/index.html">Go to Docs</a></li>
         </ul>
+        <div id="notifications"></div>
+        <script src="/socket.io/socket.io.js"></script>
+        <script>
+            const socket = io();
+            socket.on('payment_confirmed', (data) => {
+                const notification = document.createElement('div');
+                notification.innerHTML = `Payment confirmed for address: ${data.address} with balance: ${data.balance}`;
+                document.getElementById('notifications').appendChild(notification);
+            });
+        </script>
     </nav>
 
     <footer>

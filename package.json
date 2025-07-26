@@ -1,0 +1,33 @@
+{
+  "name": "app",
+  "version": "1.0.0",
+  "description": "cTrip Crypto Payment Gateway: Flask-based solution for Crypto payments. Features include automatic payment checking, Securely stores data in a JSON database. Ideal for businesses embracing cryptocurrency transactions.",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/EverKrypton/ctrip.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/EverKrypton/ctrip/issues"
+  },
+  "homepage": "https://github.com/EverKrypton/ctrip#readme",
+  "dependencies": {
+    "dotenv": "^16.0.3",
+    "express": "^4.18.2",
+    "node-cron": "^3.0.2",
+    "nodemailer": "^6.9.1",
+    "pdfkit": "^0.13.0",
+    "socket.io": "^4.5.4",
+    "web3": "^1.8.1"
+  }
+}
