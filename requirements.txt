@@ -1,4 +1,0 @@
-flask
-web3
-dotenv
-apscheduler
