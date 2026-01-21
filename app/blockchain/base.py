@@ -1,8 +1,6 @@
 from web3 import Web3
-from web3.middleware import geth_poa_middleware
+from web3.middleware import BufferedGasEstimateMiddleware, ExtraDataToPOAMiddleware
 from typing import Optional, Dict, Any
-from functools import lru_cache
-import asyncio
 from concurrent.futures import ThreadPoolExecutor
 
 
@@ -37,8 +35,10 @@ class BlockchainBase:
         self.web3 = Web3(provider)
 
         # Add PoA middleware if needed (BSC, Polygon, etc.)
+        self.web3.middleware_onion.inject(BufferedGasEstimateMiddleware, layer=0)
         if use_poa:
-            self.web3.middleware_onion.inject(geth_poa_middleware, layer=0)
+            self.web3.middleware_onion.inject(ExtraDataToPOAMiddleware, layer=0)
+
 
         # Cache for gas price (expires based on your needs)
         self._gas_price_cache = None

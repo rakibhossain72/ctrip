@@ -1,4 +1,4 @@
-from app.blockchain.base import BlockchainBase
+from blockchain.base import BlockchainBase
 from typing import Optional, List, Dict, Any
 import time
 
