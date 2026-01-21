@@ -3,7 +3,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
 from typing import Generator
 
-from app.core.config import settings   # ← your settings / env variables
+from core.config import settings
 ENVIRONMENT = settings.env
 if ENVIRONMENT == "production":
     SQLALCHEMY_DATABASE_URL = settings.database_url_prod

@@ -6,28 +6,23 @@ from typing import Optional
 from pydantic import Field
 
 from schemas.base import BaseSchema
-from app.db.models.payment import PaymentStatus
+from db.models.payment import PaymentStatus
 
 
 class PaymentBase(BaseSchema):
-    merchant_id: UUID
     chain: str = Field(..., min_length=3, max_length=20, description="Blockchain identifier e.g. ethereum, bsc, base")
     address: str = Field(..., min_length=30, max_length=120)
-    amount: Decimal = Field(..., gt=0, max_digits=26, decimal_places=8)
+    amount: int = Field(..., gt=0, description="Amount in Wei (smallest unit, integer)")
     expires_at: datetime
 
 
-class PaymentCreate(PaymentBase):
-    """What client sends when creating a payment"""
-    amount: Decimal = Field(..., gt=0, max_digits=26, decimal_places=8)
+class PaymentCreate(BaseSchema):
+    amount: int = Field(..., gt=0, description="Amount in Wei (smallest unit, integer)")
     chain: str = Field(..., min_length=3, max_length=20, description="Blockchain identifier e.g. ethereum, bsc, base")
-    merchant_id: UUID
-
 
 class PaymentCreateInternal(PaymentBase):
     """Internal version — used when service layer creates the record"""
-    merchant_id: UUID
-
+    pass
 
 class PaymentUpdate(BaseSchema):
     """Very limited — most fields should NOT be updatable by client"""
@@ -61,3 +56,4 @@ class PaymentListResponse(BaseSchema):
     total: int
     page: int = 1
     size: int = 20
+
