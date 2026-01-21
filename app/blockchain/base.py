@@ -205,6 +205,10 @@ class BlockchainBase:
     def get_latest_block_number(self) -> int:
         """Get the latest block number."""
         return self.web3.eth.block_number
+    
+    def is_valid_address(self, address: str) -> bool:
+        """Check if an address is valid."""
+        return self.web3.is_address(address)
 
     def __del__(self):
         """Cleanup thread pool on deletion."""
