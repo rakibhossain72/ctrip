@@ -17,9 +17,10 @@ from db.session import engine
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     # Startup
-    anvil = AnvilBlockchain("http://localhost:8545")
+    from blockchain.manager import get_blockchains
+    app.state.blockchains = get_blockchains()
+    
     hdwallet = HDWalletManager(mnemonic_phrase="test test test test test test test test test test test junk")
-    app.state.blockchains = {"anvil": anvil}
     app.state.hdwallet = hdwallet
 
     Base.metadata.create_all(bind=engine)

@@ -210,6 +210,12 @@ class BlockchainBase:
         """Check if an address is valid."""
         return self.web3.is_address(address)
 
+    def get_async_provider(self):
+        """Get an async provider using the current connection settings."""
+        from web3.providers.rpc import AsyncHTTPProvider
+        
+        return AsyncHTTPProvider(self.web3.provider.endpoint_uri)
+
     def __del__(self):
         """Cleanup thread pool on deletion."""
         if hasattr(self, "_executor"):

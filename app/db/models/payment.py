@@ -21,6 +21,7 @@ class PaymentStatus(enum.Enum):
     """
     PENDING
     PAID
+    DETECTED
     CONFIRMED
     EXPIRED
     SETTLED
@@ -28,6 +29,8 @@ class PaymentStatus(enum.Enum):
     """
 
     pending = "pending"
+    detected = "detected"
+    confirmed = "confirmed"
     paid = "paid"
     expired = "expired"
     settled = "settled"
