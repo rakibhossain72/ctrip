@@ -26,6 +26,7 @@ async def _scan_blocks():
             .where(ChainState.chain == "anvil")
             .with_for_update()
         )
+
         state = state.scalar_one()
 
         latest_block = await w3.eth.block_number
@@ -104,8 +105,15 @@ async def _confirm_payments():
         await session.commit()
 
 
-@dramatiq.actor(time_limit=10, max_retries=0)
+@dramatiq.actor(time_limit=10_000, max_retries=0)
 def listen_for_payments():
-    print("Listening for payments...")
-    asyncio.run(_scan_blocks())
-    asyncio.run(_confirm_payments())
+    try:
+        print("Listening for payments...")
+        asyncio.run(_scan_blocks())
+        asyncio.run(_confirm_payments())
+    except Exception as e:
+        # raise e
+        print(f"Error in listener: {e}")
+    finally:
+        # Reschedule self to run again in 5 seconds
+        listen_for_payments.send_with_options(delay=5000)

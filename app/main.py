@@ -9,7 +9,8 @@ from api.v1.payments import router as payments_router
 from utils.crypto import HDWalletManager
 from blockchain.anvil import AnvilBlockchain
 from db.base import Base
-from db.session import engine
+from db.session import engine, SessionLocal
+from db.seed import add_chain_states
 
 
 
@@ -24,6 +25,8 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     app.state.hdwallet = hdwallet
 
     Base.metadata.create_all(bind=engine)
+
+    add_chain_states(SessionLocal(), app.state.blockchains)
 
     yield
 

@@ -19,7 +19,7 @@ class Settings(BaseSettings):
     )
     
     database_url_dev: str = Field(
-        default=os.getenv("DATABASE_URL_DEV", "sqlite:///./dev_database.db"),
+        default=os.getenv("DATABASE_URL_DEV", "sqlite:////mnt/work/Projects/ctrip/dev_database.db"),
         description="Development database URL"
     )
     

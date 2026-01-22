@@ -1,4 +1,3 @@
-# app/db/session.py
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
 from typing import Generator
