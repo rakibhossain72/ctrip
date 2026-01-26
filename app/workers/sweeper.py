@@ -2,10 +2,10 @@ import asyncio
 import logging
 from datetime import datetime
 import dramatiq
-from db.async_session import AsyncSessionLocal as async_session
-from core.config import settings
-from services.blockchain.sweeper import SweeperService
-from utils.crypto import HDWalletManager
+from app.db.async_session import AsyncSessionLocal as async_session
+from app.core.config import settings
+from app.services.blockchain.sweeper import SweeperService
+from app.utils.crypto import HDWalletManager
 
 # Configure logging
 logging.basicConfig(

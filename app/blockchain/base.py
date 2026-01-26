@@ -13,7 +13,7 @@ from web3.providers import AsyncHTTPProvider
 logger = logging.getLogger(__name__)
 
 with open(
-    pathlib.Path(__file__).parent / "abi/erc20.json",
+    pathlib.Path(__file__).parent / "ABI/ERC20.json",
     "r",
 ) as f:
     ERC20_ABI = json.load(f)

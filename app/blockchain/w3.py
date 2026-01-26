@@ -1,5 +1,5 @@
 from web3 import AsyncWeb3
-from blockchain.manager import get_blockchains
+from app.blockchain.manager import get_blockchains
 
 _blockchains = get_blockchains()
 

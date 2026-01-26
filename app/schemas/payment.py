@@ -5,8 +5,8 @@ from typing import Optional
 
 from pydantic import Field
 
-from schemas.base import BaseSchema
-from db.models.payment import PaymentStatus
+from app.schemas.base import BaseSchema
+from app.db.models.payment import PaymentStatus
 
 
 class PaymentBase(BaseSchema):

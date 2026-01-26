@@ -1,28 +1,27 @@
-# main.py
 from contextlib import asynccontextmanager
 from typing import AsyncIterator
 
 from fastapi import FastAPI
 
-from api.health import health_router
-from api.v1.payments import router as payments_router
-from utils.crypto import HDWalletManager
-from blockchain.anvil import AnvilBlockchain
-from db.base import Base
-from db.engine import engine
-from db.session import SessionLocal
-from db.seed import add_chain_states
+from app.api.health import health_router
+from app.api.v1.payments import router as payments_router
+from app.utils.crypto import HDWalletManager
+from app.blockchain.anvil import AnvilBlockchain
+from app.db.base import Base
+from app.db.engine import engine
+from app.db.session import SessionLocal
+from app.db.seed import add_chain_states
 
 
 
 
-from core.config import settings
+from app.core.config import settings
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     # Startup
-    from blockchain.manager import get_blockchains
+    from app.blockchain.manager import get_blockchains
     app.state.blockchains = get_blockchains()
     
     hdwallet = HDWalletManager(mnemonic_phrase=settings.mnemonic)
@@ -33,8 +32,8 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     add_chain_states(SessionLocal(), app.state.blockchains)
 
     # Trigger background workers via Dramatiq
-    from workers.listener import listen_for_payments
-    from workers.sweeper import sweep_payments
+    from app.workers.listener import listen_for_payments
+    from app.workers.sweeper import sweep_payments
     listen_for_payments.send()
     sweep_payments.send()
 

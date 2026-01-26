@@ -14,7 +14,7 @@ class Settings(BaseSettings):
         description="Application environment"
     )
     
-    # Store base database URLs from env
+    # Store base database URLs from app.env
     database_url_prod: str = Field(
         default=os.getenv("DATABASE_URL", "postgresql://user:password@localhost:5432/production_db"),
         description="Production database URL"
@@ -43,14 +43,14 @@ class Settings(BaseSettings):
 
     @property
     def chains(self) -> List[dict]:
-        """Load chains from YAML file if it exists, otherwise return empty list"""
+        """Load chains from app.YAML file if it exists, otherwise return empty list"""
         if not os.path.exists(self.chains_yaml_path):
             return []
         
         try:
             with open(self.chains_yaml_path, "r") as f:
                 config = yaml.safe_load(f)
-                return config.get("chains", [])
+                return config
         except Exception as e:
             print(f"Error loading chains.yaml: {e}")
             return []
@@ -104,7 +104,7 @@ class Settings(BaseSettings):
     @field_validator("secret_key")
     @classmethod
     def validate_secret_key(cls, v: SecretStr, info) -> SecretStr:
-        """Ensure production secret key is changed from default"""
+        """Ensure production secret key is changed from app.default"""
         # Check if env is production (note: info.data contains all field values)
         if info.data.get("env") == "production":
             if v.get_secret_value() in ["your-secret-key-change-in-production", "your_secret_key_here"]:

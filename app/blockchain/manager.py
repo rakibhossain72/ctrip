@@ -1,8 +1,8 @@
-from core.config import settings
-from blockchain.anvil import AnvilBlockchain
-from blockchain.ethereum import EthereumBlockchain
-from blockchain.bsc import BSCBlockchain
-from blockchain.base import BlockchainBase
+from app.core.config import settings
+from app.blockchain.anvil import AnvilBlockchain
+from app.blockchain.ethereum import EthereumBlockchain
+from app.blockchain.bsc import BSCBlockchain
+from app.blockchain.base import BlockchainBase
 from typing import Dict
 
 def get_blockchains() -> Dict[str, BlockchainBase]:

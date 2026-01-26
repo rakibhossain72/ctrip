@@ -1,12 +1,12 @@
 from fastapi import APIRouter, Depends, status, responses
 from sqlalchemy.orm import Session
 
-from db.session import get_db
-from db.models.payment import Payment
-from db.models.token import Token
-from schemas.payment import PaymentCreate, PaymentRead
-from api.dependencies import get_hdwallet, get_blockchains
-from utils.crypto import HDWalletManager
+from app.db.session import get_db
+from app.db.models.payment import Payment
+from app.db.models.token import Token
+from app.schemas.payment import PaymentCreate, PaymentRead
+from app.api.dependencies import get_hdwallet, get_blockchains
+from app.utils.crypto import HDWalletManager
 from datetime import datetime, timezone, timedelta
 
 router = APIRouter(prefix="/api/v1/payments", tags=["payments"])
@@ -38,7 +38,7 @@ def create_payment(
         # Generate a new address using HD wallet
         address = hdwallet.get_address(index=0).get("address")
 
-        # Real expiration logic (better to take from request if provided)
+        # Real expiration logic (better to take from app.request if provided)
         expires_at = datetime.now(timezone.utc) + timedelta(minutes=30)
 
         db_payment = Payment(

@@ -11,7 +11,7 @@ from sqlalchemy import Column, String, Integer, Enum, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
 import enum
 import uuid
-from db.base import Base
+from app.db.base import Base
 
 
 class TransactionStatus(enum.Enum):

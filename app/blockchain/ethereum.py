@@ -1,4 +1,4 @@
-from blockchain.base import BlockchainBase
+from app.blockchain.base import BlockchainBase
 
 class EthereumBlockchain(BlockchainBase):
     def __init__(self, provider_url: str, **kwargs):

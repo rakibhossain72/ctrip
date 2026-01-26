@@ -1,7 +1,7 @@
-from db.models.payment import Payment
-from db.models.chain import ChainState
-from db.models.transaction import Transaction
-from db.models.token import Token
+from app.db.models.payment import Payment
+from app.db.models.chain import ChainState
+from app.db.models.transaction import Transaction
+from app.db.models.token import Token
 
 
 __all__ = [

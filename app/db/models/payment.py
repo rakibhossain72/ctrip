@@ -15,7 +15,7 @@ from sqlalchemy.dialects.postgresql import UUID
 import enum
 import datetime
 import uuid
-from db.base import Base
+from app.db.base import Base
 
 
 class PaymentStatus(enum.Enum):

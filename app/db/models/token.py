@@ -1,7 +1,7 @@
 from sqlalchemy import Column, String, Integer, Boolean
 from sqlalchemy.dialects.postgresql import UUID
 import uuid
-from db.base import Base
+from app.db.base import Base
 
 class Token(Base):
     __tablename__ = "tokens"

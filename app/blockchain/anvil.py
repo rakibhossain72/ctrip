@@ -1,6 +1,6 @@
 import logging
 from typing import Any, Dict, List, Optional
-from blockchain.base import BlockchainBase
+from app.blockchain.base import BlockchainBase
 from web3 import AsyncWeb3
 
 logger = logging.getLogger(__name__)

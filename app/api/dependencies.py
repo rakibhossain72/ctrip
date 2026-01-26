@@ -1,6 +1,6 @@
 from fastapi import Request
-from blockchain.base import BlockchainBase
-from utils.crypto import HDWalletManager
+from app.blockchain.base import BlockchainBase
+from app.utils.crypto import HDWalletManager
 
 def get_blockchains(request: Request) -> dict[str, BlockchainBase]:
     blockchains = request.app.state.blockchains

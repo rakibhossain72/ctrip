@@ -2,7 +2,7 @@ import asyncio
 import logging
 import dramatiq
 from typing import Any, Dict, Optional
-from services.webhook import WebhookService
+from app.services.webhook import WebhookService
 
 logger = logging.getLogger(__name__)
 

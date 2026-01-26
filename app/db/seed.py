@@ -1,9 +1,9 @@
 from typing import Dict
 from sqlalchemy import select
 from sqlalchemy.orm import Session
-from db.models import ChainState, Token
-from blockchain.base import BlockchainBase
-from core.config import settings
+from app.db.models import ChainState, Token
+from app.blockchain.base import BlockchainBase
+from app.core.config import settings
 
 
 def add_chain_states(db: Session, chains: Dict[str, BlockchainBase]):

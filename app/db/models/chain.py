@@ -3,7 +3,7 @@ chain
 last_scanned_block
 """
 from sqlalchemy import Column, Integer, String
-from db.base import Base
+from app.db.base import Base
 from sqlalchemy.schema import UniqueConstraint
 
 class ChainState(Base):

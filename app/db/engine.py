@@ -1,6 +1,6 @@
 from sqlalchemy import create_engine
 from sqlalchemy.ext.asyncio import create_async_engine
-from core.config import settings
+from app.core.config import settings
 
 def get_database_url() -> str:
     return (
