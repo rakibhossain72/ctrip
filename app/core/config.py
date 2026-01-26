@@ -1,6 +1,7 @@
 from pydantic_settings import BaseSettings
 from pydantic import Field, SecretStr, field_validator, ConfigDict, computed_field
-from typing import Literal
+from typing import Literal, List, Optional
+import json
 from eth_account import Account
 import os
 
@@ -27,6 +28,28 @@ class Settings(BaseSettings):
     rpc_url: str = Field(
         default="http://127.0.0.1:8545",
         description="Ethereum RPC endpoint"
+    )
+
+    redis_url: str = Field(
+        default="redis://localhost:6379/0",
+        description="Redis connection URL"
+    )
+
+    chains_config: str = Field(
+        default='[{"name": "anvil", "rpc_url": "http://127.0.0.1:8545", "tokens": [{"symbol": "ETH", "decimals": 18}]}]',
+        description="JSON string of chains and tokens"
+    )
+
+    @property
+    def chains(self) -> List[dict]:
+        try:
+            return json.loads(self.chains_config)
+        except Exception:
+            return []
+
+    mnemonic: str = Field(
+        default="test test test test test test test test test test test junk",
+        description="HD Wallet mnemonic"
     )
     
     # Secrets

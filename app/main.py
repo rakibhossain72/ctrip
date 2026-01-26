@@ -16,18 +16,27 @@ from db.seed import add_chain_states
 
 
 
+from core.config import settings
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     # Startup
     from blockchain.manager import get_blockchains
     app.state.blockchains = get_blockchains()
     
-    hdwallet = HDWalletManager(mnemonic_phrase="test test test test test test test test test test test junk")
+    hdwallet = HDWalletManager(mnemonic_phrase=settings.mnemonic)
     app.state.hdwallet = hdwallet
 
     Base.metadata.create_all(bind=engine)
 
     add_chain_states(SessionLocal(), app.state.blockchains)
+
+    # Trigger background workers via Dramatiq
+    from workers.listener import listen_for_payments
+    from workers.sweeper import sweep_payments
+    listen_for_payments.send()
+    sweep_payments.send()
 
     yield
 

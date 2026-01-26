@@ -11,14 +11,16 @@ from db.models.payment import PaymentStatus
 
 class PaymentBase(BaseSchema):
     chain: str = Field(..., min_length=3, max_length=20, description="Blockchain identifier e.g. ethereum, bsc, base")
+    token_id: Optional[UUID] = Field(None, description="UUID of the token record")
     address: str = Field(..., min_length=30, max_length=120)
     amount: int = Field(..., gt=0, description="Amount in Wei (smallest unit, integer)")
     expires_at: datetime
 
 
 class PaymentCreate(BaseSchema):
-    amount: int = Field(..., gt=0, description="Amount in Wei (smallest unit, integer)")
-    chain: str = Field(..., min_length=3, max_length=20, description="Blockchain identifier e.g. ethereum, bsc, base")
+    amount: int = Field(..., gt=0, description="Amount in Wei or token base unit")
+    chain: str = Field(..., min_length=3, max_length=20, description="Blockchain identifier")
+    token_id: Optional[UUID] = Field(None, description="UUID of the token if ERC20")
 
 class PaymentCreateInternal(PaymentBase):
     """Internal version — used when service layer creates the record"""

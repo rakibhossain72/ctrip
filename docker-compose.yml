@@ -1,0 +1,49 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=payment_db
+    ports:
+      - "5432:5432"
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  app:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/payment_db
+      - REDIS_URL=redis://redis:6379/0
+      - ENV=development
+      - RPC_URL=${RPC_URL:-http://127.0.0.1:8545}
+      - PRIVATE_KEY=${PRIVATE_KEY}
+      - MNEMONIC=${MNEMONIC:-test test test test test test test test test test test junk}
+    depends_on:
+      - db
+      - redis
+
+  worker:
+    build: .
+    command: dramatiq app.workers.listener app.workers.sweeper
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/payment_db
+      - REDIS_URL=redis://redis:6379/0
+      - RPC_URL=${RPC_URL:-http://127.0.0.1:8545}
+      - PRIVATE_KEY=${PRIVATE_KEY}
+      - MNEMONIC=${MNEMONIC:-test test test test test test test test test test test junk}
+    depends_on:
+      - db
+      - redis
+
+volumes:
+  postgres_data:

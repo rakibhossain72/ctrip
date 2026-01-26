@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 
 from db.session import get_db
 from db.models.payment import Payment
+from db.models.token import Token
 from schemas.payment import PaymentCreate, PaymentRead
 from api.dependencies import get_hdwallet, get_blockchains
 from utils.crypto import HDWalletManager
@@ -28,6 +29,12 @@ def create_payment(
         if payment_req.chain not in blockchains:
             raise ValueError(f"Unsupported chain: {payment_req.chain}")
 
+        # validate token if provided
+        if payment_req.token_id:
+            token = db.query(Token).filter(Token.id == payment_req.token_id, Token.chain == payment_req.chain).first()
+            if not token:
+                raise ValueError(f"Token {payment_req.token_id} not found for chain {payment_req.chain}")
+
         # Generate a new address using HD wallet
         address = hdwallet.get_address(index=0).get("address")
 
@@ -36,6 +43,7 @@ def create_payment(
 
         db_payment = Payment(
             chain=payment_req.chain,
+            token_id=payment_req.token_id,
             address=address,
             amount=payment_req.amount,
             expires_at=expires_at,
@@ -48,6 +56,8 @@ def create_payment(
         return db_payment
 
     except Exception as e:
+        # rollback in case of error
+        db.rollback()
         return responses.JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST,
             content={"detail": str(e)},

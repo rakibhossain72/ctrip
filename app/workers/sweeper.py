@@ -1,0 +1,41 @@
+import asyncio
+import logging
+from datetime import datetime
+import dramatiq
+from db.async_session import AsyncSessionLocal as async_session
+from core.config import settings
+from services.blockchain.sweeper import SweeperService
+from utils.crypto import HDWalletManager
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
+_loop = asyncio.new_event_loop()
+asyncio.set_event_loop(_loop)
+
+@dramatiq.actor(time_limit=10_000, max_retries=0)
+def sweep_payments():
+    try:
+        logger.info("Dramatiq actor: sweep_payments triggered")
+        chains = [c["name"] for c in settings.chains]
+        if not chains:
+            chains = ["anvil"]
+            
+        async def run():
+            async with async_session() as session:
+                hd_wallet = HDWalletManager(mnemonic_phrase=settings.mnemonic)
+                sweeper = SweeperService(session, hd_wallet)
+                for chain_name in chains:
+                    await sweeper.sweep_confirmed_payments(chain_name)
+
+        _loop.run_until_complete(run())
+            
+        logger.info("Sweep cycle complete - scheduling next run in 30 seconds")
+    except Exception as e:
+        logger.error(f"Error in sweeper: {e}", exc_info=True)
+    finally:
+        sweep_payments.send_with_options(delay=30000)

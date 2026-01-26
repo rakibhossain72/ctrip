@@ -15,6 +15,17 @@ def get_blockchains() -> Dict[str, BlockchainBase]:
     Return a dictionary of configured blockchains.
     Useful for populating app.state.blockchains or for use in workers.
     """
-    return {
-        "anvil": get_anvil_blockchain()
-    }
+    blockchains = {}
+    for chain_cfg in settings.chains:
+        name = chain_cfg.get("name")
+        rpc_url = chain_cfg.get("rpc_url")
+        if name and rpc_url:
+            # For now, we use BlockchainBase as the base implementation
+            # In a real app, you might have different classes for different chains
+            blockchains[name] = BlockchainBase(provider_url=rpc_url)
+    
+    # Fallback if config is empty
+    if not blockchains:
+        blockchains["anvil"] = AnvilBlockchain(provider_url=settings.rpc_url)
+        
+    return blockchains

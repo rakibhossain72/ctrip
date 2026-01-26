@@ -2,7 +2,10 @@ from web3 import Web3
 from web3.middleware import BufferedGasEstimateMiddleware, ExtraDataToPOAMiddleware
 from typing import Optional, Dict, Any
 from concurrent.futures import ThreadPoolExecutor
-
+from web3.providers import HTTPProvider
+from requests.adapters import HTTPAdapter
+from requests.sessions import Session
+import time
 
 class BlockchainBase:
     def __init__(
@@ -16,10 +19,6 @@ class BlockchainBase:
             request_timeout: Request timeout in seconds
             use_poa: Enable PoA middleware (for BSC, Polygon, etc.)
         """
-        # Use persistent HTTP session for connection pooling
-        from web3.providers import HTTPProvider
-        from requests.adapters import HTTPAdapter
-        from requests.sessions import Session
 
         session = Session()
         adapter = HTTPAdapter(
@@ -38,7 +37,6 @@ class BlockchainBase:
         self.web3.middleware_onion.inject(BufferedGasEstimateMiddleware, layer=0)
         if use_poa:
             self.web3.middleware_onion.inject(ExtraDataToPOAMiddleware, layer=0)
-
 
         # Cache for gas price (expires based on your needs)
         self._gas_price_cache = None
@@ -65,7 +63,6 @@ class BlockchainBase:
         Args:
             use_cache: Whether to use cached gas price
         """
-        import time
 
         if use_cache:
             current_time = time.time()
@@ -205,7 +202,7 @@ class BlockchainBase:
     def get_latest_block_number(self) -> int:
         """Get the latest block number."""
         return self.web3.eth.block_number
-    
+
     def is_valid_address(self, address: str) -> bool:
         """Check if an address is valid."""
         return self.web3.is_address(address)
@@ -213,7 +210,7 @@ class BlockchainBase:
     def get_async_provider(self):
         """Get an async provider using the current connection settings."""
         from web3.providers.rpc import AsyncHTTPProvider
-        
+
         return AsyncHTTPProvider(self.web3.provider.endpoint_uri)
 
     def __del__(self):
