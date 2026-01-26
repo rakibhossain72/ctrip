@@ -2,7 +2,6 @@ import asyncio
 import logging
 from datetime import datetime
 import dramatiq
-from blockchain.w3 import _w3_cache
 from db.async_session import AsyncSessionLocal as async_session
 from core.config import settings
 from services.blockchain.scanner import ScannerService

@@ -1,69 +1,68 @@
-from web3 import Web3
-from web3.middleware import BufferedGasEstimateMiddleware, ExtraDataToPOAMiddleware
-from typing import Optional, Dict, Any
-from concurrent.futures import ThreadPoolExecutor
-from web3.providers import HTTPProvider
-from requests.adapters import HTTPAdapter
-from requests.sessions import Session
+import logging
 import time
+from typing import Any, Dict, Optional
+import json
+import os
+import pathlib
+
+from eth_account import Account
+from web3 import AsyncWeb3
+from web3.middleware import ExtraDataToPOAMiddleware
+from web3.providers import AsyncHTTPProvider
+
+logger = logging.getLogger(__name__)
+
+with open(
+    pathlib.Path(__file__).parent / "abi/erc20.json",
+    "r",
+) as f:
+    ERC20_ABI = json.load(f)
+
 
 class BlockchainBase:
     def __init__(
-        self, provider_url: str, request_timeout: int = 10, use_poa: bool = False
+        self,
+        provider_url: str,
+        chain_id: Optional[int] = None,
+        use_poa: bool = False,
+        request_timeout: int = 30,
     ):
-        """
-        Initialize blockchain connection with optimizations.
+        self.provider_url = provider_url
+        self.chain_id = chain_id
+        self.use_poa = use_poa
 
-        Args:
-            provider_url: RPC endpoint URL
-            request_timeout: Request timeout in seconds
-            use_poa: Enable PoA middleware (for BSC, Polygon, etc.)
-        """
-
-        session = Session()
-        adapter = HTTPAdapter(
-            pool_connections=20, pool_maxsize=20, max_retries=3, pool_block=False
-        )
-        session.mount("http://", adapter)
-        session.mount("https://", adapter)
-
-        provider = HTTPProvider(
-            provider_url, request_kwargs={"timeout": request_timeout}, session=session
+        self.w3 = AsyncWeb3(
+            AsyncHTTPProvider(provider_url, request_kwargs={"timeout": request_timeout})
         )
 
-        self.web3 = Web3(provider)
-
-        # Add PoA middleware if needed (BSC, Polygon, etc.)
-        self.web3.middleware_onion.inject(BufferedGasEstimateMiddleware, layer=0)
         if use_poa:
-            self.web3.middleware_onion.inject(ExtraDataToPOAMiddleware, layer=0)
+            self.w3.middleware_onion.inject(ExtraDataToPOAMiddleware, layer=0)
 
-        # Cache for gas price (expires based on your needs)
         self._gas_price_cache = None
         self._gas_price_timestamp = 0
-        self._gas_cache_duration = 10  # seconds
+        self._gas_cache_duration = 10
 
-        # Thread pool for parallel operations
-        self._executor = ThreadPoolExecutor(max_workers=10)
+    async def is_connected(self) -> bool:
+        try:
+            return await self.w3.is_connected()
+        except Exception as e:
+            logger.error(f"Failed to connect to {self.provider_url}: {e}")
+            return False
 
-    def is_connected(self) -> bool:
-        """Check blockchain connection."""
-        return self.web3.is_connected()
+    async def get_balance(self, address: str) -> int:
+        """Get native balance in wei."""
+        return await self.w3.eth.get_balance(AsyncWeb3.to_checksum_address(address))
 
-    def get_balance(self, address: str) -> float:
-        """Get balance in ETH for an address."""
-        checksum_address = Web3.to_checksum_address(address)
-        balance_wei = self.web3.eth.get_balance(checksum_address)
-        return self.web3.from_wei(balance_wei, "ether")
+    async def get_token_balance(self, token_address: str, user_address: str) -> int:
+        """Get ERC20 token balance in base units."""
+        contract = self.w3.eth.contract(
+            address=AsyncWeb3.to_checksum_address(token_address), abi=ERC20_ABI
+        )
+        return await contract.functions.balanceOf(
+            AsyncWeb3.to_checksum_address(user_address)
+        ).call()
 
-    def get_gas_price(self, use_cache: bool = True) -> float:
-        """
-        Get current gas price with optional caching.
-
-        Args:
-            use_cache: Whether to use cached gas price
-        """
-
+    async def get_gas_price(self, use_cache: bool = True) -> int:
         if use_cache:
             current_time = time.time()
             if (
@@ -72,148 +71,75 @@ class BlockchainBase:
             ):
                 return self._gas_price_cache
 
-        gas_price_wei = self.web3.eth.gas_price
-        gas_price_gwei = self.web3.from_wei(gas_price_wei, "gwei")
+        gas_price = await self.w3.eth.gas_price
 
         if use_cache:
-            self._gas_price_cache = gas_price_gwei
+            self._gas_price_cache = gas_price
             self._gas_price_timestamp = time.time()
 
-        return gas_price_gwei
+        return gas_price
 
-    def estimate_gas(
-        self, from_address: str, to_address: str, amount_eth: float
-    ) -> int:
-        """Estimate gas for a transaction."""
-        tx = {
-            "from": Web3.to_checksum_address(from_address),
-            "to": Web3.to_checksum_address(to_address),
-            "value": self.web3.to_wei(amount_eth, "ether"),
-        }
-        return self.web3.eth.estimate_gas(tx)
+    async def get_fee_history(self, block_count: int = 5, newest_block: str = "latest"):
+        """Fetch EIP-1559 fee history."""
+        return await self.w3.eth.fee_history(block_count, newest_block, [25, 50, 75])
 
-    def build_transaction(
+    async def estimate_gas(self, tx: Dict[str, Any]) -> int:
+        try:
+            return await self.w3.eth.estimate_gas(tx)
+        except Exception as e:
+            logger.warning(f"Gas estimation failed, using default: {e}")
+            return 21000 if not tx.get("data") else 100000
+
+    async def build_transaction(
         self,
         from_address: str,
         to_address: str,
-        amount_eth: float,
+        value_wei: int,
+        data: bytes = b"",
         gas_limit: Optional[int] = None,
-        gas_price_gwei: Optional[float] = None,
         nonce: Optional[int] = None,
     ) -> Dict[str, Any]:
-        """
-        Build transaction dict (separate from signing for better performance).
+        from_checksum = AsyncWeb3.to_checksum_address(from_address)
 
-        Args:
-            from_address: Sender address
-            to_address: Recipient address
-            amount_eth: Amount in ETH
-            gas_limit: Optional pre-calculated gas limit
-            gas_price_gwei: Optional gas price in gwei
-            nonce: Optional pre-fetched nonce
-        """
-        from_checksum = Web3.to_checksum_address(from_address)
-        to_checksum = Web3.to_checksum_address(to_address)
-
-        # Use provided values or fetch them
         if nonce is None:
-            nonce = self.web3.eth.get_transaction_count(from_checksum, "pending")
-
-        if gas_price_gwei is None:
-            gas_price_gwei = self.get_gas_price()
-
-        if gas_limit is None:
-            gas_limit = self.estimate_gas(from_address, to_address, amount_eth)
-
-        # Add 10% buffer to gas limit for safety
-        gas_limit = int(gas_limit * 1.1)
+            nonce = await self.w3.eth.get_transaction_count(from_checksum, "pending")
 
         tx = {
             "nonce": nonce,
-            "to": to_checksum,
-            "value": self.web3.to_wei(amount_eth, "ether"),
-            "gas": gas_limit,
-            "gasPrice": self.web3.to_wei(gas_price_gwei, "gwei"),
-            "chainId": self.web3.eth.chain_id,
+            "from": from_checksum,
+            "to": AsyncWeb3.to_checksum_address(to_address),
+            "value": value_wei,
+            "data": data,
+            "chainId": self.chain_id or await self.w3.eth.chain_id,
         }
+
+        # Try EIP-1559
+        try:
+            fee_history = await self.get_fee_history()
+            base_fee = fee_history["baseFeePerGas"][-1]
+            priority_fee = fee_history["reward"][-1][1]  # median reward
+
+            tx["maxFeePerGas"] = int((base_fee * 2) + priority_fee)
+            tx["maxPriorityFeePerGas"] = priority_fee
+        except Exception:
+            # Fallback to legacy gas price
+            tx["gasPrice"] = await self.get_gas_price()
+
+        if gas_limit is None:
+            gas_limit = await self.estimate_gas(tx)
+
+        tx["gas"] = int(gas_limit * 1.1)  # 10% buffer
 
         return tx
 
-    def send_transaction(
-        self,
-        from_address: str,
-        to_address: str,
-        amount_eth: float,
-        private_key: str,
-        gas_limit: Optional[int] = None,
-        gas_price_gwei: Optional[float] = None,
-        wait_for_receipt: bool = False,
-    ) -> str:
-        """
-        Send a transaction.
+    async def send_transaction(self, tx: Dict[str, Any], private_key: str) -> str:
+        account = Account.from_key(private_key)
+        signed_tx = self.w3.eth.account.sign_transaction(tx, private_key)
+        tx_hash = await self.w3.eth.send_raw_transaction(signed_tx.raw_transaction)
+        return AsyncWeb3.to_hex(tx_hash)
 
-        Args:
-            from_address: Sender address
-            to_address: Recipient address
-            amount_eth: Amount in ETH
-            private_key: Private key for signing
-            gas_limit: Optional pre-calculated gas limit
-            gas_price_gwei: Optional gas price in gwei
-            wait_for_receipt: Whether to wait for transaction receipt
-        """
-        tx = self.build_transaction(
-            from_address, to_address, amount_eth, gas_limit, gas_price_gwei
-        )
+    async def get_receipt(self, tx_hash: str, timeout: int = 120) -> Any:
+        return await self.w3.eth.wait_for_transaction_receipt(tx_hash, timeout=timeout)
 
-        signed_tx = self.web3.eth.account.sign_transaction(tx, private_key)
-        tx_hash = self.web3.eth.send_raw_transaction(signed_tx.raw_transaction)
-        tx_hash_hex = self.web3.to_hex(tx_hash)
-
-        if wait_for_receipt:
-            receipt = self.web3.eth.wait_for_transaction_receipt(tx_hash, timeout=120)
-            return tx_hash_hex, receipt
-
-        return tx_hash_hex
-
-    def batch_get_balances(self, addresses: list) -> Dict[str, float]:
-        """
-        Get balances for multiple addresses in parallel.
-
-        Args:
-            addresses: List of addresses to check
-        """
-
-        def get_bal(addr):
-            return addr, self.get_balance(addr)
-
-        results = self._executor.map(get_bal, addresses)
-        return dict(results)
-
-    def get_transaction_receipt(self, tx_hash: str, timeout: int = 120):
-        """
-        Get transaction receipt.
-
-        Args:
-            tx_hash: Transaction hash
-            timeout: Timeout in seconds
-        """
-        return self.web3.eth.wait_for_transaction_receipt(tx_hash, timeout=timeout)
-
-    def get_latest_block_number(self) -> int:
-        """Get the latest block number."""
-        return self.web3.eth.block_number
-
-    def is_valid_address(self, address: str) -> bool:
-        """Check if an address is valid."""
-        return self.web3.is_address(address)
-
-    def get_async_provider(self):
-        """Get an async provider using the current connection settings."""
-        from web3.providers.rpc import AsyncHTTPProvider
-
-        return AsyncHTTPProvider(self.web3.provider.endpoint_uri)
-
-    def __del__(self):
-        """Cleanup thread pool on deletion."""
-        if hasattr(self, "_executor"):
-            self._executor.shutdown(wait=False)
+    async def get_latest_block(self) -> int:
+        return await self.w3.eth.block_number
