@@ -1,7 +1,8 @@
 from pydantic_settings import BaseSettings
 from pydantic import Field, SecretStr, field_validator, ConfigDict, computed_field
-from typing import Literal, List, Optional
+from typing import Literal, List, Optional, Dict
 import json
+import yaml
 from eth_account import Account
 import os
 
@@ -35,16 +36,23 @@ class Settings(BaseSettings):
         description="Redis connection URL"
     )
 
-    chains_config: str = Field(
-        default='[{"name": "anvil", "rpc_url": "http://127.0.0.1:8545", "tokens": [{"symbol": "ETH", "decimals": 18}]}]',
-        description="JSON string of chains and tokens"
+    chains_yaml_path: str = Field(
+        default="chains.yaml",
+        description="Path to the YAML file containing chain configurations"
     )
 
     @property
     def chains(self) -> List[dict]:
+        """Load chains from YAML file if it exists, otherwise return empty list"""
+        if not os.path.exists(self.chains_yaml_path):
+            return []
+        
         try:
-            return json.loads(self.chains_config)
-        except Exception:
+            with open(self.chains_yaml_path, "r") as f:
+                config = yaml.safe_load(f)
+                return config.get("chains", [])
+        except Exception as e:
+            print(f"Error loading chains.yaml: {e}")
             return []
 
     mnemonic: str = Field(

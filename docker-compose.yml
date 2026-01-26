@@ -21,6 +21,8 @@ services:
     build: .
     ports:
       - "8000:8000"
+    volumes:
+      - .:/app
     environment:
       - DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/payment_db
       - REDIS_URL=redis://redis:6379/0
@@ -35,6 +37,8 @@ services:
   worker:
     build: .
     command: dramatiq app.workers.listener app.workers.sweeper
+    volumes:
+      - .:/app
     environment:
       - DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/payment_db
       - REDIS_URL=redis://redis:6379/0
