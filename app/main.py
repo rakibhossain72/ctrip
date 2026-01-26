@@ -9,7 +9,8 @@ from api.v1.payments import router as payments_router
 from utils.crypto import HDWalletManager
 from blockchain.anvil import AnvilBlockchain
 from db.base import Base
-from db.session import engine, SessionLocal
+from db.engine import engine
+from db.session import SessionLocal
 from db.seed import add_chain_states
 
 
