@@ -4,6 +4,8 @@ from blockchain.w3 import get_w3
 from db.models.payment import Payment
 from db.models.chain import ChainState
 from db.models.token import Token
+from workers.webhook import send_webhook_task
+from core.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -111,5 +113,21 @@ class ScannerService:
                 payment.status = "confirmed"
                 payment.confirmations = confirmations
                 confirmed_count += 1
+                
+                # Trigger webhook if configured in env
+                if settings.webhook_url:
+                    payload = {
+                        "payment_id": str(payment.id),
+                        "status": "confirmed",
+                        "address": payment.address,
+                        "amount": str(payment.amount),
+                        "chain": payment.chain,
+                        "token_id": str(payment.token_id) if payment.token_id else None
+                    }
+                    send_webhook_task.send(
+                        settings.webhook_url, 
+                        payload, 
+                        settings.webhook_secret
+                    )
         
         await self.session.commit()

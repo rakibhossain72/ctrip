@@ -36,7 +36,7 @@ services:
 
   worker:
     build: .
-    command: dramatiq app.workers.listener app.workers.sweeper
+    command: dramatiq app.workers.listener app.workers.sweeper app.workers.webhook
     volumes:
       - .:/app
     environment:

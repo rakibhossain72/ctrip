@@ -59,6 +59,16 @@ class Settings(BaseSettings):
         default="test test test test test test test test test test test junk",
         description="HD Wallet mnemonic"
     )
+
+    webhook_url: Optional[str] = Field(
+        default=None,
+        description="Global webhook URL for payment notifications"
+    )
+
+    webhook_secret: Optional[str] = Field(
+        default=None,
+        description="Secret key for signing webhook payloads"
+    )
     
     # Secrets
     private_key: SecretStr = Field(
