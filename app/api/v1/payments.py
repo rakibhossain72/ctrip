@@ -10,8 +10,6 @@ from app.utils.crypto import HDWalletManager
 from datetime import datetime, timezone, timedelta
 
 router = APIRouter(prefix="/api/v1/payments", tags=["payments"])
-
-
 @router.post(
     "/",
     response_model=PaymentRead,

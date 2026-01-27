@@ -55,3 +55,20 @@ class Payment(Base):
     )
 
     token = relationship("Token")
+
+
+
+"""
+address,
+index
+"""
+class HDWalletAddress(Base):
+    __tablename__ = "hdwallet_addresses"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    address = Column(String, nullable=False)
+    index = Column(BigInteger, nullable=False)
+    is_swapped = Column(String, default="false", nullable=False)
+    created_at = Column(
+        DateTime, default=datetime.datetime.now(datetime.timezone.utc), nullable=False
+    )

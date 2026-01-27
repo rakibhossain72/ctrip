@@ -27,7 +27,9 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     hdwallet = HDWalletManager(mnemonic_phrase=settings.mnemonic)
     app.state.hdwallet = hdwallet
 
-    Base.metadata.create_all(bind=engine)
+    # NOTE: Table creation now handled by Alembic migrations
+    # Use: python migrate.py upgrade
+    # Base.metadata.create_all(bind=engine)
 
     add_chain_states(SessionLocal(), app.state.blockchains)
 

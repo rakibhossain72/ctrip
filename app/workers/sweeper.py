@@ -7,15 +7,14 @@ from app.core.config import settings
 from app.services.blockchain.sweeper import SweeperService
 from app.utils.crypto import HDWalletManager
 
-# Configure logging
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
 
-_loop = asyncio.new_event_loop()
-asyncio.set_event_loop(_loop)
+# Deleted:_loop = asyncio.new_event_loop()
+# Deleted:asyncio.set_event_loop(_loop)
 
 @dramatiq.actor(time_limit=10_000, max_retries=0)
 def sweep_payments():
@@ -32,7 +31,7 @@ def sweep_payments():
                 for chain_name in chains:
                     await sweeper.sweep_confirmed_payments(chain_name)
 
-        _loop.run_until_complete(run())
+        asyncio.run(run())
             
         logger.info("Sweep cycle complete - scheduling next run in 30 seconds")
     except Exception as e:
