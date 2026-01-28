@@ -31,6 +31,6 @@ def get_blockchains() -> Dict[str, BlockchainBase]:
 
     # Fallback if config is empty
     if not blockchains:
-        blockchains["anvil"] = AnvilBlockchain(provider_url=settings.rpc_url)
+        blockchains["anvil"] = AnvilBlockchain(provider_url="http://localhost:8545")
 
     return blockchains

@@ -34,12 +34,6 @@ class Settings(BaseSettings):
         description="Development database URL"
     )
 
-    # RPC Configuration
-    rpc_url: str = Field(
-        default="http://127.0.0.1:8545",
-        description="Ethereum RPC endpoint"
-    )
-
     redis_url: str = Field(
         default="redis://localhost:6379/0",
         description="Redis connection URL"

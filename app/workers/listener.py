@@ -2,17 +2,12 @@
 Worker for listening to blockchain events and scanning for payments.
 """
 import asyncio
-import logging
 import dramatiq
 from app.db.async_session import AsyncSessionLocal as async_session
 from app.services.blockchain.scanner import ScannerService
 from app.workers.utils import get_enabled_chains
 
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
+from app.core.logger import logger
 
 CONFIRMATIONS_REQUIRED = 1
 BLOCK_BATCH_SIZE = 20

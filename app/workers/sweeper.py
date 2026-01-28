@@ -2,7 +2,6 @@
 Worker for sweeping confirmed payments and settling them.
 """
 import asyncio
-import logging
 import dramatiq
 from app.db.async_session import AsyncSessionLocal as async_session
 from app.core.config import settings
@@ -10,11 +9,7 @@ from app.services.blockchain.sweeper import SweeperService
 from app.utils.crypto import HDWalletManager
 from app.workers.utils import get_enabled_chains
 
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
+from app.core.logger import logger
 
 
 @dramatiq.actor(time_limit=10_000, max_retries=0)
