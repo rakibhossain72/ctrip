@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, status, responses
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
-from app.db.models.payment import Payment
+from app.db.models.payment import Payment, HDWalletAddress
 from app.db.models.token import Token
 from app.schemas.payment import PaymentCreate, PaymentRead
 from app.api.dependencies import get_hdwallet, get_blockchains
@@ -33,8 +33,20 @@ def create_payment(
             if not token:
                 raise ValueError(f"Token {payment_req.token_id} not found for chain {payment_req.chain}")
 
+        # Get the next index from HDWalletAddress
+        last_addr = db.query(HDWalletAddress).order_by(HDWalletAddress.index.desc()).first()
+        next_index = (last_addr.index + 1) if last_addr else 0
+
         # Generate a new address using HD wallet
-        address = hdwallet.get_address(index=0).get("address")
+        wallet_info = hdwallet.get_address(index=next_index)
+        address = wallet_info.get("address")
+
+        # Save the new address to track it
+        db_hd_address = HDWalletAddress(
+            address=address,
+            index=next_index
+        )
+        db.add(db_hd_address)
 
         # Real expiration logic (better to take from app.request if provided)
         expires_at = datetime.now(timezone.utc) + timedelta(minutes=30)
