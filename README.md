@@ -79,7 +79,7 @@ This will start the API, PostgreSQL, Redis, and background workers.
 
 ## Documentation
 
-For detailed information on database migrations, see [MIGRATIONS.md](MIGRATIONS.md).
+For more detailed information, see [Documentation](https://ctrip-docs.readthedocs.io/).
 
 ## License
 
