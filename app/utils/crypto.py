@@ -1,3 +1,6 @@
+"""
+Cryptographic utilities for HD Wallet management.
+"""
 from eth_account import Account
 from eth_account.hdaccount import generate_mnemonic, seed_from_mnemonic, key_from_seed
 
@@ -41,6 +44,7 @@ class HDWalletManager:
         private_key = key_from_seed(self.seed, path)
 
         # Create account from private key
+        # pylint: disable=no-value-for-parameter
         account = Account.from_key(private_key)
 
         return {"address": account.address, "path": path, "index": index}
@@ -56,10 +60,10 @@ class HDWalletManager:
         Returns:
             list: List of address dicts
         """
-        addresses = []
+        addresses_list = []
         for i in range(start_index, start_index + count):
-            addresses.append(self.get_address(i))
-        return addresses
+            addresses_list.append(self.get_address(i))
+        return addresses_list
 
     def get_mnemonic(self):
         """Return the mnemonic phrase (KEEP THIS SECRET!)"""
@@ -69,21 +73,21 @@ class HDWalletManager:
 # Example usage
 if __name__ == "__main__":
     # Initialize wallet (in production, load existing mnemonic securely)
-    wallet = HDWalletManager(
+    main_wallet = HDWalletManager(
         "test test test test test test test test test test test junk"
     )
-    print(f"\n{wallet.get_mnemonic()}\n")
+    print(f"\n{main_wallet.get_mnemonic()}\n")
 
     # Generate first 5 payment addresses
-    addresses = wallet.get_multiple_addresses(5)
+    main_addresses = main_wallet.get_multiple_addresses(5)
 
-    for addr in addresses:
+    for addr in main_addresses:
         print(f"\nIndex {addr['index']}:")
         print(f"  Path:    {addr['path']}")
         print(f"  Address: {addr['address']}")
 
     # Example: Get address for specific payment ID
     print("\nExample: Generate address for payment #42:")
-    payment_42 = wallet.get_address(42)
-    print(f"Address: {payment_42['address']}")
-    print(f"Path: {payment_42['path']}")
+    main_payment_42 = main_wallet.get_address(42)
+    print(f"Address: {main_payment_42['address']}")
+    print(f"Path: {main_payment_42['path']}")

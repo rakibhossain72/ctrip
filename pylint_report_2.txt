@@ -1,0 +1,157 @@
+************* Module app/utils/time.py
+app/utils/time.py:1:0: F0001: No module named app/utils/time.py (fatal)
+************* Module env
+alembic/env.py:142:0: C0305: Trailing newlines (trailing-newlines)
+************* Module 2026_01_27_1807-5ec6405addd0_initial_database_schema
+alembic/versions/2026_01_27_1807-5ec6405addd0_initial_database_schema.py:107:0: C0305: Trailing newlines (trailing-newlines)
+alembic/versions/2026_01_27_1807-5ec6405addd0_initial_database_schema.py:12:0: C0411: third party import "sqlalchemy" should be placed before first party import "alembic.op"  (wrong-import-order)
+************* Module api.__init__
+app/api/__init__.py:3:0: C0304: Final newline missing (missing-final-newline)
+************* Module api
+app/api/__init__.py:1:0: C0114: Missing module docstring (missing-module-docstring)
+************* Module api.dependencies
+app/api/dependencies.py:22:0: C0304: Final newline missing (missing-final-newline)
+************* Module api.health
+app/api/health.py:13:0: C0304: Final newline missing (missing-final-newline)
+************* Module payments
+app/api/v1/payments.py:86:0: C0304: Final newline missing (missing-final-newline)
+************* Module anvil
+app/blockchain/anvil.py:70:0: C0305: Trailing newlines (trailing-newlines)
+************* Module base
+app/blockchain/base.py:161:0: C0305: Trailing newlines (trailing-newlines)
+************* Module manager
+app/blockchain/manager.py:37:0: C0305: Trailing newlines (trailing-newlines)
+************* Module w3
+app/blockchain/w3.py:14:0: C0304: Final newline missing (missing-final-newline)
+************* Module config
+app/core/config.py:25:0: C0301: Line too long (101/100) (line-too-long)
+app/core/config.py:138:0: C0304: Final newline missing (missing-final-newline)
+************* Module logger
+app/core/logger.py:1:0: C0114: Missing module docstring (missing-module-docstring)
+************* Module async_session
+app/db/async_session.py:1:0: C0114: Missing module docstring (missing-module-docstring)
+app/db/async_session.py:4:0: E0402: Attempted relative import beyond top-level package (relative-beyond-top-level)
+app/db/async_session.py:6:0: C0103: Constant name "AsyncSessionLocal" doesn't conform to UPPER_CASE naming style (invalid-name)
+app/db/async_session.py:12:0: C0116: Missing function or method docstring (missing-function-docstring)
+app/db/async_session.py:3:0: C0411: standard import "typing.AsyncGenerator" should be placed before third party imports "sqlalchemy.ext.asyncio.AsyncSession", "sqlalchemy.orm.sessionmaker" (wrong-import-order)
+app/db/base.py:1:0: C0114: Missing module docstring (missing-module-docstring)
+app/db/base.py:3:0: C0115: Missing class docstring (missing-class-docstring)
+app/db/base.py:3:0: R0903: Too few public methods (0/2) (too-few-public-methods)
+************* Module engine
+app/db/engine.py:1:0: C0114: Missing module docstring (missing-module-docstring)
+app/db/engine.py:5:0: C0116: Missing function or method docstring (missing-function-docstring)
+app/db/engine.py:12:0: C0116: Missing function or method docstring (missing-function-docstring)
+************* Module models.__init__
+app/db/models/__init__.py:12:0: C0304: Final newline missing (missing-final-newline)
+************* Module models
+app/db/models/__init__.py:1:0: C0114: Missing module docstring (missing-module-docstring)
+************* Module models.chain
+app/db/models/chain.py:17:0: C0304: Final newline missing (missing-final-newline)
+app/db/models/chain.py:9:0: C0115: Missing class docstring (missing-class-docstring)
+app/db/models/chain.py:9:0: R0903: Too few public methods (0/2) (too-few-public-methods)
+app/db/models/chain.py:7:0: C0411: third party import "sqlalchemy.schema.UniqueConstraint" should be placed before first party import "app.db.base.Base"  (wrong-import-order)
+app/db/models/chain.py:7:0: C0412: Imports from package sqlalchemy are not grouped (ungrouped-imports)
+************* Module models.payment
+app/db/models/payment.py:62:0: C0304: Final newline missing (missing-final-newline)
+app/db/models/payment.py:28:0: R0903: Too few public methods (0/2) (too-few-public-methods)
+app/db/models/payment.py:50:0: R0903: Too few public methods (0/2) (too-few-public-methods)
+************* Module models.token
+app/db/models/token.py:1:0: C0114: Missing module docstring (missing-module-docstring)
+app/db/models/token.py:6:0: C0115: Missing class docstring (missing-class-docstring)
+app/db/models/token.py:6:0: R0903: Too few public methods (0/2) (too-few-public-methods)
+app/db/models/token.py:3:0: C0411: standard import "uuid" should be placed before third party imports "sqlalchemy.Column", "sqlalchemy.dialects.postgresql.UUID" (wrong-import-order)
+************* Module models.transaction
+app/db/models/transaction.py:24:4: C0103: Class constant name "pending" doesn't conform to UPPER_CASE naming style (invalid-name)
+app/db/models/transaction.py:25:4: C0103: Class constant name "confirmed" doesn't conform to UPPER_CASE naming style (invalid-name)
+app/db/models/transaction.py:26:4: C0103: Class constant name "failed" doesn't conform to UPPER_CASE naming style (invalid-name)
+app/db/models/transaction.py:29:0: C0115: Missing class docstring (missing-class-docstring)
+app/db/models/transaction.py:29:0: R0903: Too few public methods (0/2) (too-few-public-methods)
+app/db/models/transaction.py:12:0: C0411: standard import "enum" should be placed before third party imports "sqlalchemy.Column", "sqlalchemy.dialects.postgresql.UUID" (wrong-import-order)
+app/db/models/transaction.py:13:0: C0411: standard import "uuid" should be placed before third party imports "sqlalchemy.Column", "sqlalchemy.dialects.postgresql.UUID" (wrong-import-order)
+************* Module seed
+app/db/seed.py:18:0: C0303: Trailing whitespace (trailing-whitespace)
+app/db/seed.py:27:0: C0303: Trailing whitespace (trailing-whitespace)
+app/db/seed.py:36:0: C0303: Trailing whitespace (trailing-whitespace)
+app/db/seed.py:44:0: C0303: Trailing whitespace (trailing-whitespace)
+app/db/seed.py:1:0: C0114: Missing module docstring (missing-module-docstring)
+app/db/seed.py:9:0: C0116: Missing function or method docstring (missing-function-docstring)
+************* Module session
+app/db/session.py:1:0: C0114: Missing module docstring (missing-module-docstring)
+app/db/session.py:3:0: E0402: Attempted relative import beyond top-level package (relative-beyond-top-level)
+app/db/session.py:5:0: C0103: Constant name "SessionLocal" doesn't conform to UPPER_CASE naming style (invalid-name)
+app/db/session.py:11:0: C0116: Missing function or method docstring (missing-function-docstring)
+app/db/session.py:2:0: C0411: standard import "typing.Generator" should be placed before third party import "sqlalchemy.orm.sessionmaker" (wrong-import-order)
+app/schemas/base.py:10:0: C0304: Final newline missing (missing-final-newline)
+app/schemas/base.py:1:0: C0114: Missing module docstring (missing-module-docstring)
+app/schemas/base.py:4:0: C0115: Missing class docstring (missing-class-docstring)
+************* Module scanner
+app/services/blockchain/scanner.py:149:0: C0305: Trailing newlines (trailing-newlines)
+************* Module sweeper
+app/services/blockchain/sweeper.py:67:0: C0305: Trailing newlines (trailing-newlines)
+app/services/blockchain/sweeper.py:30:41: E1101: Instance of 'FieldInfo' has no 'get_secret_value' member (no-member)
+app/services/blockchain/sweeper.py:14:0: R0903: Too few public methods (1/2) (too-few-public-methods)
+app/services/blockchain/sweeper.py:7:0: W0611: Unused get_w3 imported from app.blockchain.w3 (unused-import)
+************* Module webhook
+app/services/webhook.py:13:17: C0303: Trailing whitespace (trailing-whitespace)
+app/services/webhook.py:14:32: C0303: Trailing whitespace (trailing-whitespace)
+app/services/webhook.py:24:0: C0303: Trailing whitespace (trailing-whitespace)
+app/services/webhook.py:27:36: C0303: Trailing whitespace (trailing-whitespace)
+app/services/webhook.py:28:34: C0303: Trailing whitespace (trailing-whitespace)
+app/services/webhook.py:32:0: C0303: Trailing whitespace (trailing-whitespace)
+app/services/webhook.py:38:0: C0303: Trailing whitespace (trailing-whitespace)
+app/services/webhook.py:43:0: C0303: Trailing whitespace (trailing-whitespace)
+app/services/webhook.py:1:0: C0114: Missing module docstring (missing-module-docstring)
+app/services/webhook.py:10:0: C0115: Missing class docstring (missing-class-docstring)
+app/services/webhook.py:41:15: W0718: Catching too general exception Exception (broad-exception-caught)
+app/services/webhook.py:36:16: W1203: Use lazy % formatting in logging functions (logging-fstring-interpolation)
+app/services/webhook.py:40:12: W1203: Use lazy % formatting in logging functions (logging-fstring-interpolation)
+app/services/webhook.py:42:12: W1203: Use lazy % formatting in logging functions (logging-fstring-interpolation)
+app/services/webhook.py:10:0: R0903: Too few public methods (1/2) (too-few-public-methods)
+app/services/webhook.py:6:0: C0411: standard import "typing.Any" should be placed before third party import "httpx" (wrong-import-order)
+************* Module crypto
+app/utils/crypto.py:94:0: C0305: Trailing newlines (trailing-newlines)
+************* Module workers
+app/workers/__init__.py:1:0: C0114: Missing module docstring (missing-module-docstring)
+************* Module workers.listener
+app/workers/listener.py:49:0: C0304: Final newline missing (missing-final-newline)
+************* Module workers.sweeper
+app/workers/sweeper.py:43:0: C0304: Final newline missing (missing-final-newline)
+************* Module workers.webhook
+app/workers/webhook.py:15:13: C0303: Trailing whitespace (trailing-whitespace)
+app/workers/webhook.py:16:28: C0303: Trailing whitespace (trailing-whitespace)
+app/workers/webhook.py:23:0: C0303: Trailing whitespace (trailing-whitespace)
+app/workers/webhook.py:1:0: C0114: Missing module docstring (missing-module-docstring)
+app/workers/webhook.py:22:4: W1203: Use lazy % formatting in logging functions (logging-fstring-interpolation)
+app/workers/webhook.py:30:12: W0719: Raising too general exception: Exception (broad-exception-raised)
+app/workers/webhook.py:35:8: W1203: Use lazy % formatting in logging functions (logging-fstring-interpolation)
+app/workers/webhook.py:4:0: C0411: standard import "typing.Any" should be placed before third party import "dramatiq" (wrong-import-order)
+************* Module migrate
+migrate.py:36:0: C0303: Trailing whitespace (trailing-whitespace)
+migrate.py:75:0: C0303: Trailing whitespace (trailing-whitespace)
+migrate.py:77:0: C0303: Trailing whitespace (trailing-whitespace)
+migrate.py:81:0: C0303: Trailing whitespace (trailing-whitespace)
+migrate.py:85:0: C0303: Trailing whitespace (trailing-whitespace)
+migrate.py:89:0: C0303: Trailing whitespace (trailing-whitespace)
+migrate.py:92:0: C0303: Trailing whitespace (trailing-whitespace)
+migrate.py:95:0: C0303: Trailing whitespace (trailing-whitespace)
+migrate.py:99:0: C0303: Trailing whitespace (trailing-whitespace)
+migrate.py:103:0: C0303: Trailing whitespace (trailing-whitespace)
+migrate.py:26:13: W1510: 'subprocess.run' used without explicitly defining the value for 'check'. (subprocess-run-check)
+migrate.py:78:4: R1705: Unnecessary "elif" after "return", remove the leading "el" from "elif" (no-else-return)
+migrate.py:70:0: R0911: Too many return statements (9/6) (too-many-return-statements)
+************* Module server
+server.py:55:0: C0304: Final newline missing (missing-final-newline)
+server.py:12:0: W0611: Unused AnvilBlockchain imported from app.blockchain.anvil (unused-import)
+server.py:1:0: R0801: Similar lines in 2 files
+==workers.listener:[27:33]
+==workers.sweeper:[25:31]
+        chains = [c["name"] for c in settings.chains]
+        if not chains:
+            chains = ["anvil"]
+
+        async def run():
+            async with async_session() as session: (duplicate-code)
+
+------------------------------------------------------------------
+Your code has been rated at 0.00/10 (previous run: 4.59/10, -4.59)
+

@@ -1,9 +1,11 @@
+"""
+Base class for blockchain interactions.
+"""
 import logging
 import time
-from typing import Any, Dict, Optional
 import json
-import os
 import pathlib
+from typing import Any, Dict, Optional
 
 from eth_account import Account
 from web3 import AsyncWeb3
@@ -15,11 +17,15 @@ logger = logging.getLogger(__name__)
 with open(
     pathlib.Path(__file__).parent / "ABI/ERC20.json",
     "r",
+    encoding="utf-8"
 ) as f:
     ERC20_ABI = json.load(f)
 
 
 class BlockchainBase:
+    """
+    Base class providing common blockchain operations.
+    """
     def __init__(
         self,
         provider_url: str,
@@ -43,10 +49,11 @@ class BlockchainBase:
         self._gas_cache_duration = 10
 
     async def is_connected(self) -> bool:
+        """Check if the web3 provider is connected."""
         try:
             return await self.w3.is_connected()
-        except Exception as e:
-            logger.error(f"Failed to connect to {self.provider_url}: {e}")
+        except Exception as e:  # pylint: disable=broad-exception-caught
+            logger.error("Failed to connect to %s: %s", self.provider_url, e)
             return False
 
     async def get_balance(self, address: str) -> int:
@@ -63,6 +70,7 @@ class BlockchainBase:
         ).call()
 
     async def get_gas_price(self, use_cache: bool = True) -> int:
+        """Get current gas price, optionally using a local cache."""
         if use_cache:
             current_time = time.time()
             if (
@@ -84,12 +92,14 @@ class BlockchainBase:
         return await self.w3.eth.fee_history(block_count, newest_block, [25, 50, 75])
 
     async def estimate_gas(self, tx: Dict[str, Any]) -> int:
+        """Estimate gas for a transaction."""
         try:
             return await self.w3.eth.estimate_gas(tx)
-        except Exception as e:
-            logger.warning(f"Gas estimation failed, using default: {e}")
+        except Exception as e:  # pylint: disable=broad-exception-caught
+            logger.warning("Gas estimation failed, using default: %s", e)
             return 21000 if not tx.get("data") else 100000
 
+    # pylint: disable=too-many-arguments,too-many-positional-arguments
     async def build_transaction(
         self,
         from_address: str,
@@ -99,6 +109,7 @@ class BlockchainBase:
         gas_limit: Optional[int] = None,
         nonce: Optional[int] = None,
     ) -> Dict[str, Any]:
+        """Build a transaction dictionary."""
         from_checksum = AsyncWeb3.to_checksum_address(from_address)
 
         if nonce is None:
@@ -121,7 +132,7 @@ class BlockchainBase:
 
             tx["maxFeePerGas"] = int((base_fee * 2) + priority_fee)
             tx["maxPriorityFeePerGas"] = priority_fee
-        except Exception:
+        except Exception:  # pylint: disable=broad-exception-caught
             # Fallback to legacy gas price
             tx["gasPrice"] = await self.get_gas_price()
 
@@ -133,13 +144,17 @@ class BlockchainBase:
         return tx
 
     async def send_transaction(self, tx: Dict[str, Any], private_key: str) -> str:
-        account = Account.from_key(private_key)
+        """Sign and send a transaction."""
+        # pylint: disable=no-value-for-parameter
+        Account.from_key(private_key)
         signed_tx = self.w3.eth.account.sign_transaction(tx, private_key)
         tx_hash = await self.w3.eth.send_raw_transaction(signed_tx.raw_transaction)
         return AsyncWeb3.to_hex(tx_hash)
 
     async def get_receipt(self, tx_hash: str, timeout: int = 120) -> Any:
+        """Get transaction receipt with timeout."""
         return await self.w3.eth.wait_for_transaction_receipt(tx_hash, timeout=timeout)
 
     async def get_latest_block(self) -> int:
+        """Get the latest block number."""
         return await self.w3.eth.block_number

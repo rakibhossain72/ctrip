@@ -1,0 +1,45 @@
+************* Module api.__init__
+app/api/__init__.py:7:0: C0304: Final newline missing (missing-final-newline)
+************* Module api.dependencies
+app/api/dependencies.py:17:0: C0304: Final newline missing (missing-final-newline)
+************* Module api.health
+app/api/health.py:14:0: C0304: Final newline missing (missing-final-newline)
+************* Module payments
+app/api/v1/payments.py:86:0: C0304: Final newline missing (missing-final-newline)
+************* Module w3
+app/blockchain/w3.py:14:0: C0304: Final newline missing (missing-final-newline)
+************* Module config
+app/core/config.py:141:0: C0304: Final newline missing (missing-final-newline)
+************* Module async_session
+app/db/async_session.py:21:0: C0305: Trailing newlines (trailing-newlines)
+************* Module engine
+app/db/engine.py:40:0: C0305: Trailing newlines (trailing-newlines)
+************* Module models.__init__
+app/db/models/__init__.py:15:0: C0304: Final newline missing (missing-final-newline)
+************* Module models.chain
+app/db/models/chain.py:21:0: C0304: Final newline missing (missing-final-newline)
+************* Module models.payment
+app/db/models/payment.py:64:0: C0304: Final newline missing (missing-final-newline)
+************* Module seed
+app/db/seed.py:53:0: C0305: Trailing newlines (trailing-newlines)
+************* Module session
+app/db/session.py:23:0: C0305: Trailing newlines (trailing-newlines)
+************* Module base
+app/schemas/base.py:14:0: C0304: Final newline missing (missing-final-newline)
+************* Module sweeper
+app/services/blockchain/sweeper.py:66:0: C0305: Trailing newlines (trailing-newlines)
+************* Module webhook
+app/services/webhook.py:56:0: C0305: Trailing newlines (trailing-newlines)
+app/services/webhook.py:15:0: R0903: Too few public methods (1/2) (too-few-public-methods)
+************* Module workers.listener
+app/workers/listener.py:47:0: C0304: Final newline missing (missing-final-newline)
+************* Module workers.sweeper
+app/workers/sweeper.py:42:0: C0304: Final newline missing (missing-final-newline)
+************* Module workers.webhook
+app/workers/webhook.py:40:0: C0305: Trailing newlines (trailing-newlines)
+************* Module server
+server.py:54:0: C0304: Final newline missing (missing-final-newline)
+
+------------------------------------------------------------------
+Your code has been rated at 9.74/10 (previous run: 9.45/10, +0.29)
+

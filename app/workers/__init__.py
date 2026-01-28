@@ -1,4 +1,6 @@
-# app/workers/__init__.py
+"""
+Dramatiq worker initialization and broker configuration.
+"""
 import dramatiq
 from dramatiq.brokers.redis import RedisBroker
 from app.core.config import settings

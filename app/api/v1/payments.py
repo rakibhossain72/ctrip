@@ -1,3 +1,7 @@
+"""
+API endpoints for managing payments.
+"""
+from datetime import datetime, timezone, timedelta
 from fastapi import APIRouter, Depends, status, responses
 from sqlalchemy.orm import Session
 
@@ -7,9 +11,10 @@ from app.db.models.token import Token
 from app.schemas.payment import PaymentCreate, PaymentRead
 from app.api.dependencies import get_hdwallet, get_blockchains
 from app.utils.crypto import HDWalletManager
-from datetime import datetime, timezone, timedelta
 
 router = APIRouter(prefix="/api/v1/payments", tags=["payments"])
+
+
 @router.post(
     "/",
     response_model=PaymentRead,
@@ -21,7 +26,9 @@ def create_payment(
     hdwallet: HDWalletManager = Depends(get_hdwallet),
     blockchains=Depends(get_blockchains),
 ):
-
+    """
+    Create a new payment request and generate a unique receiving address.
+    """
     try:
         # validate chain
         if payment_req.chain not in blockchains:
@@ -29,9 +36,14 @@ def create_payment(
 
         # validate token if provided
         if payment_req.token_id:
-            token = db.query(Token).filter(Token.id == payment_req.token_id, Token.chain == payment_req.chain).first()
+            token = db.query(Token).filter(
+                Token.id == payment_req.token_id,
+                Token.chain == payment_req.chain
+            ).first()
             if not token:
-                raise ValueError(f"Token {payment_req.token_id} not found for chain {payment_req.chain}")
+                raise ValueError(
+                    f"Token {payment_req.token_id} not found for chain {payment_req.chain}"
+                )
 
         # Get the next index from HDWalletAddress
         last_addr = db.query(HDWalletAddress).order_by(HDWalletAddress.index.desc()).first()
@@ -48,7 +60,7 @@ def create_payment(
         )
         db.add(db_hd_address)
 
-        # Real expiration logic (better to take from app.request if provided)
+        # Real expiration logic (better to take from request if provided)
         expires_at = datetime.now(timezone.utc) + timedelta(minutes=30)
 
         db_payment = Payment(
@@ -65,7 +77,7 @@ def create_payment(
 
         return db_payment
 
-    except Exception as e:
+    except Exception as e:  # pylint: disable=broad-exception-caught
         # rollback in case of error
         db.rollback()
         return responses.JSONResponse(

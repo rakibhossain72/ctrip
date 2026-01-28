@@ -1,7 +1,11 @@
+"""
+Worker for processing webhook tasks using Dramatiq.
+"""
 import asyncio
 import logging
-import dramatiq
 from typing import Any, Dict, Optional
+
+import dramatiq
 from app.services.webhook import WebhookService
 
 logger = logging.getLogger(__name__)
@@ -10,27 +14,26 @@ logger = logging.getLogger(__name__)
 _loop = asyncio.new_event_loop()
 asyncio.set_event_loop(_loop)
 
+
 @dramatiq.actor(max_retries=3)
 def send_webhook_task(
-    url: str, 
-    payload: Dict[str, Any], 
+    url: str,
+    payload: Dict[str, Any],
     secret: Optional[str] = None
 ):
     """
     Dramatiq actor to send webhooks asynchronously.
     """
-    logger.info(f"Processing webhook task for {url}")
-    
+    logger.info("Processing webhook task for %s", url)
+
     async def run():
         success = await WebhookService.send_webhook(url, payload, secret)
         if not success:
-            # We could raise an exception here to trigger dramatiq retries
-            # but WebhookService already logs the error.
-            # If we want retries, we should raise.
-            raise Exception(f"Failed to send webhook to {url}")
+            # We raise an exception here to trigger dramatiq retries
+            raise RuntimeError(f"Failed to send webhook to {url}")
 
     try:
         _loop.run_until_complete(run())
     except Exception as e:
-        logger.error(f"Webhook actor error: {e}")
-        raise # Let dramatiq handle retries
+        logger.error("Webhook actor error: %s", e)
+        raise  # Let dramatiq handle retries

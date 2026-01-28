@@ -1,15 +1,17 @@
+"""
+FastAPI dependencies for shared components like blockchains and HD wallet.
+"""
 from fastapi import Request
-from app.blockchain.base import BlockchainBase
 from app.utils.crypto import HDWalletManager
 
-def get_blockchains(request: Request) -> dict[str, BlockchainBase]:
-    blockchains = request.app.state.blockchains
-    if blockchains is None:
-        raise RuntimeError("Blockchain not initialized in lifespan")
-    return blockchains
 
-def get_hdwallet(request: Request ) -> HDWalletManager:
-    hdwallet = request.app.state.hdwallet
-    if hdwallet is None:
-        raise RuntimeError("HDWallet manager not initialized in lifespan")
-    return hdwallet
+def get_blockchains(request: Request):
+    """Dependency to access initialized blockchains from app state."""
+    # pylint: disable=no-member
+    return request.app.state.blockchains
+
+
+def get_hdwallet(request: Request) -> HDWalletManager:
+    """Dependency to access the HD wallet manager from app state."""
+    # pylint: disable=no-member
+    return request.app.state.hdwallet

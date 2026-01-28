@@ -1,5 +1,9 @@
-from logging.config import fileConfig
+"""
+Alembic environment configuration.
+"""
+# pylint: disable=no-member
 import asyncio
+from logging.config import fileConfig
 from sqlalchemy import pool, engine_from_config
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
@@ -7,6 +11,7 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 from alembic import context
 
 # Import your app's base and models
+# pylint: disable=unused-import
 from app.db.base import Base
 from app.db.engine import DATABASE_URL
 from app.core.config import settings
@@ -27,11 +32,6 @@ if config.config_file_name is not None:
 
 # Set target_metadata for autogenerate support
 target_metadata = Base.metadata
-
-# other values from the config, defined by the needs of env.py,
-# can be acquired:
-# my_important_option = config.get_main_option("my_important_option")
-# ... etc.
 
 
 def run_migrations_offline() -> None:
@@ -75,7 +75,7 @@ def do_run_migrations(connection: Connection) -> None:
 
 async def run_async_migrations() -> None:
     """Run migrations in async mode.
-    
+
     This is the preferred mode for PostgreSQL connections.
     """
     connectable = async_engine_from_config(
@@ -92,7 +92,7 @@ async def run_async_migrations() -> None:
 
 def run_sync_migrations() -> None:
     """Run migrations in sync mode.
-    
+
     This mode is used for SQLite and other synchronous drivers.
     """
     connectable = engine_from_config(
@@ -126,7 +126,7 @@ def run_migrations_online() -> None:
     """
     # Use async migrations for PostgreSQL, sync for SQLite
     db_url = config.get_main_option("sqlalchemy.url")
-    
+
     if db_url and db_url.startswith("postgresql://"):
         # PostgreSQL - use async
         asyncio.run(run_async_migrations())

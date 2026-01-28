@@ -1,9 +1,13 @@
+"""
+Manager for initializing and retrieving blockchain instances.
+"""
+from typing import Dict
 from app.core.config import settings
 from app.blockchain.anvil import AnvilBlockchain
 from app.blockchain.ethereum import EthereumBlockchain
 from app.blockchain.bsc import BSCBlockchain
 from app.blockchain.base import BlockchainBase
-from typing import Dict
+
 
 def get_blockchains() -> Dict[str, BlockchainBase]:
     """
@@ -15,7 +19,7 @@ def get_blockchains() -> Dict[str, BlockchainBase]:
         rpc_url = chain_cfg.get("rpc_url")
         if not rpc_url:
             continue
-            
+
         if name == "ethereum":
             blockchains[name] = EthereumBlockchain(provider_url=rpc_url)
         elif name == "bsc":
@@ -24,9 +28,9 @@ def get_blockchains() -> Dict[str, BlockchainBase]:
             blockchains[name] = AnvilBlockchain(provider_url=rpc_url)
         else:
             blockchains[name] = BlockchainBase(provider_url=rpc_url)
-    
+
     # Fallback if config is empty
     if not blockchains:
         blockchains["anvil"] = AnvilBlockchain(provider_url=settings.rpc_url)
-        
+
     return blockchains

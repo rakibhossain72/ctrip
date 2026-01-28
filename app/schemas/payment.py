@@ -1,7 +1,9 @@
+"""
+Pydantic models for payment-related API operations.
+"""
 from datetime import datetime
-from decimal import Decimal
 from uuid import UUID
-from typing import Optional
+from typing import Optional, List
 
 from pydantic import Field
 
@@ -10,7 +12,11 @@ from app.db.models.payment import PaymentStatus
 
 
 class PaymentBase(BaseSchema):
-    chain: str = Field(..., min_length=3, max_length=20, description="Blockchain identifier e.g. ethereum, bsc, base")
+    """Base payment schema with shared fields."""
+    chain: str = Field(
+        ..., min_length=3, max_length=20,
+        description="Blockchain identifier e.g. ethereum, bsc, base"
+    )
     token_id: Optional[UUID] = Field(None, description="UUID of the token record")
     address: str = Field(..., min_length=30, max_length=120)
     amount: int = Field(..., gt=0, description="Amount in Wei (smallest unit, integer)")
@@ -18,13 +24,15 @@ class PaymentBase(BaseSchema):
 
 
 class PaymentCreate(BaseSchema):
+    """Schema for creating a new payment."""
     amount: int = Field(..., gt=0, description="Amount in Wei or token base unit")
     chain: str = Field(..., min_length=3, max_length=20, description="Blockchain identifier")
     token_id: Optional[UUID] = Field(None, description="UUID of the token if ERC20")
 
+
 class PaymentCreateInternal(PaymentBase):
     """Internal version — used when service layer creates the record"""
-    pass
+
 
 class PaymentUpdate(BaseSchema):
     """Very limited — most fields should NOT be updatable by client"""
@@ -47,15 +55,16 @@ class PaymentRead(PaymentBase):
 class PaymentInDB(PaymentRead):
     """Full database representation — used internally only"""
     # Nothing extra needed if you use from_attributes=True
-    pass
+
 
 class PaymentResponse(BaseSchema):
+    """Standard response wrapper for a single payment."""
     data: PaymentRead
 
 
 class PaymentListResponse(BaseSchema):
-    data: list[PaymentRead]
+    """Standard response wrapper for a list of payments."""
+    data: List[PaymentRead]
     total: int
     page: int = 1
     size: int = 20
-

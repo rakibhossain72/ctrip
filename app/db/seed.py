@@ -1,3 +1,6 @@
+"""
+Database seeding utilities for initial configuration.
+"""
 from typing import Dict
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -7,6 +10,10 @@ from app.core.config import settings
 
 
 def add_chain_states(db: Session, chains: Dict[str, BlockchainBase]):
+    """
+    Ensure all configured chains have a state record in the database.
+    Also adds tokens from configuration.
+    """
     # Add chain states
     for chain_name in chains.keys():
         existing_state = db.execute(
@@ -15,7 +22,7 @@ def add_chain_states(db: Session, chains: Dict[str, BlockchainBase]):
         if not existing_state:
             chain_state = ChainState(chain=chain_name, last_scanned_block=0)
             db.add(chain_state)
-    
+
     # Add tokens from config
     for chain_cfg in settings.chains:
         chain_name = chain_cfg.get("name")
@@ -24,7 +31,7 @@ def add_chain_states(db: Session, chains: Dict[str, BlockchainBase]):
             symbol = token_cfg.get("symbol")
             address = token_cfg.get("address")
             decimals = token_cfg.get("decimals", 18)
-            
+
             # Check if token already exists
             existing_token = db.execute(
                 select(Token).where(
@@ -33,7 +40,7 @@ def add_chain_states(db: Session, chains: Dict[str, BlockchainBase]):
                     Token.address == address
                 )
             ).scalar_one_or_none()
-            
+
             if not existing_token:
                 db.add(Token(
                     chain=chain_name,
@@ -41,5 +48,5 @@ def add_chain_states(db: Session, chains: Dict[str, BlockchainBase]):
                     address=address,
                     decimals=decimals
                 ))
-    
+
     db.commit()
