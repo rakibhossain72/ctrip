@@ -11,6 +11,8 @@ from app.db.models.token import Token
 from app.schemas.payment import PaymentCreate, PaymentRead
 from app.api.dependencies import get_hdwallet, get_blockchains
 from app.utils.crypto import HDWalletManager
+from uuid import UUID
+from fastapi import HTTPException
 
 router = APIRouter(prefix="/api/v1/payments", tags=["payments"])
 
@@ -84,3 +86,21 @@ def create_payment(
             status_code=status.HTTP_400_BAD_REQUEST,
             content={"detail": str(e)},
         )
+@router.get(
+    "/{payment_id}",
+    response_model=PaymentRead,
+)
+def get_payment(
+    payment_id: UUID,
+    db: Session = Depends(get_db),
+):
+    """
+    Get payment details by ID.
+    """
+    db_payment = db.query(Payment).filter(Payment.id == payment_id).first()
+    if not db_payment:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Payment not found"
+        )
+    return db_payment
