@@ -14,7 +14,6 @@ from app.db.session import SessionLocal
 from app.db.seed import add_chain_states
 from app.core.config import settings
 from app.workers.listener import listen_for_payments
-from app.workers.sweeper import sweep_payments
 
 
 @asynccontextmanager
@@ -36,7 +35,6 @@ async def lifespan(fastapi_app: FastAPI) -> AsyncIterator[None]:
 
     # Trigger background workers via Dramatiq
     listen_for_payments.send()
-    sweep_payments.send()
 
     yield
 
