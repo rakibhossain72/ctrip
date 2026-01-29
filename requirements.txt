@@ -10,7 +10,6 @@ asn1crypto==1.5.1
 async-timeout==5.0.1
 asyncpg==0.31.0
 attrs==25.4.0
-backports.asyncio.runner==1.2.0
 base58==2.1.1
 bcrypt==5.0.0
 bitarray==3.8.0
