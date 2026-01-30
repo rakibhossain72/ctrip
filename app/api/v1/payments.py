@@ -2,7 +2,11 @@
 API endpoints for managing payments.
 """
 from datetime import datetime, timezone, timedelta
+from uuid import UUID
+
 from fastapi import APIRouter, Depends, status, responses
+from fastapi import HTTPException
+
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
@@ -11,8 +15,6 @@ from app.db.models.token import Token
 from app.schemas.payment import PaymentCreate, PaymentRead
 from app.api.dependencies import get_hdwallet, get_blockchains
 from app.utils.crypto import HDWalletManager
-from uuid import UUID
-from fastapi import HTTPException
 
 router = APIRouter(prefix="/api/v1/payments", tags=["payments"])
 

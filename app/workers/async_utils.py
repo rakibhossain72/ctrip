@@ -22,6 +22,9 @@ class _AsyncWorker:
 
     @classmethod
     def get_instance(cls):
+        """
+        Getting a _AsyncWorker instance
+        """
         if cls._instance is None:
             with cls._lock:
                 if cls._instance is None:

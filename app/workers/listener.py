@@ -1,7 +1,6 @@
 """
 Worker for listening to blockchain events and scanning for payments.
 """
-import asyncio
 import dramatiq
 from app.db.async_session import AsyncSessionLocal as async_session
 from app.services.blockchain.scanner import ScannerService
@@ -34,7 +33,6 @@ def listen_for_payments():
                 for chain_name in chains:
                     await scanner.scan_chain(chain_name)
                     await scanner.confirm_payments(chain_name)
-                
                 # Check for expired payments across all chains
                 await scanner.check_expired_payments()
 
