@@ -7,9 +7,10 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, status, responses
 from fastapi import HTTPException
 
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 
-from app.db.session import get_db
+from app.db.async_session import get_async_db
 from app.db.models.payment import Payment, HDWalletAddress
 from app.db.models.token import Token
 from app.schemas.payment import PaymentCreate, PaymentRead
@@ -24,9 +25,9 @@ router = APIRouter(prefix="/api/v1/payments", tags=["payments"])
     response_model=PaymentRead,
     status_code=status.HTTP_201_CREATED,
 )
-def create_payment(
+async def create_payment(
     payment_req: PaymentCreate,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     hdwallet: HDWalletManager = Depends(get_hdwallet),
     blockchains=Depends(get_blockchains),
 ):
@@ -40,17 +41,21 @@ def create_payment(
 
         # validate token if provided
         if payment_req.token_id:
-            token = db.query(Token).filter(
-                Token.id == payment_req.token_id,
-                Token.chain == payment_req.chain
-            ).first()
+            token_res = await db.execute(
+                select(Token).filter(
+                    Token.id == payment_req.token_id,
+                    Token.chain == payment_req.chain
+                )
+            )
+            token = token_res.scalars().first()
             if not token:
                 raise ValueError(
                     f"Token {payment_req.token_id} not found for chain {payment_req.chain}"
                 )
 
         # Get the next index from HDWalletAddress
-        last_addr = db.query(HDWalletAddress).order_by(HDWalletAddress.index.desc()).first()
+        addr_res = await db.execute(select(HDWalletAddress).order_by(HDWalletAddress.index.desc()))
+        last_addr = addr_res.scalars().first()
         next_index = (last_addr.index + 1) if last_addr else 0
 
         # Generate a new address using HD wallet
@@ -76,14 +81,14 @@ def create_payment(
         )
 
         db.add(db_payment)
-        db.commit()
-        db.refresh(db_payment)
+        await db.commit()
+        await db.refresh(db_payment)
 
         return db_payment
 
     except Exception as e:  # pylint: disable=broad-exception-caught
         # rollback in case of error
-        db.rollback()
+        await db.rollback()
         return responses.JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST,
             content={"detail": str(e)},
@@ -92,14 +97,15 @@ def create_payment(
     "/{payment_id}",
     response_model=PaymentRead,
 )
-def get_payment(
+async def get_payment(
     payment_id: UUID,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     Get payment details by ID.
     """
-    db_payment = db.query(Payment).filter(Payment.id == payment_id).first()
+    res = await db.execute(select(Payment).filter(Payment.id == payment_id))
+    db_payment = res.scalars().first()
     if not db_payment:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

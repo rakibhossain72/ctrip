@@ -37,7 +37,11 @@ class Payment(Base):
     chain = Column(String, nullable=False)
     address = Column(String, nullable=False)
     amount = Column(Numeric(precision=80, scale=0), nullable=False)
-    status = Column(Enum(PaymentStatus), default=PaymentStatus.PENDING, nullable=False)
+    status = Column(
+        Enum(PaymentStatus, values_callable=lambda obj: [item.value for item in obj]),
+        default=PaymentStatus.PENDING,
+        nullable=False
+    )
     confirmations = Column(Integer, default=0, nullable=False)
     detected_in_block = Column(Integer, nullable=True)
     expires_at = Column(DateTime, nullable=False)

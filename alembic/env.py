@@ -127,7 +127,7 @@ def run_migrations_online() -> None:
     # Use async migrations for PostgreSQL, sync for SQLite
     db_url = config.get_main_option("sqlalchemy.url")
 
-    if db_url and db_url.startswith("postgresql://"):
+    if db_url and "postgresql" in db_url:
         # PostgreSQL - use async
         asyncio.run(run_async_migrations())
     else:

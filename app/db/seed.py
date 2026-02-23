@@ -3,22 +3,23 @@ Database seeding utilities for initial configuration.
 """
 from typing import Dict
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.models import ChainState, Token
 from app.blockchain.base import BlockchainBase
 from app.core.config import settings
 
 
-def add_chain_states(db: Session, chains: Dict[str, BlockchainBase]):
+async def add_chain_states(db: AsyncSession, chains: Dict[str, BlockchainBase]):
     """
     Ensure all configured chains have a state record in the database.
     Also adds tokens from configuration.
     """
     # Add chain states
     for chain_name in chains.keys():
-        existing_state = db.execute(
+        result = await db.execute(
             select(ChainState).where(ChainState.chain == chain_name)
-        ).scalar_one_or_none()
+        )
+        existing_state = result.scalar_one_or_none()
         if not existing_state:
             chain_state = ChainState(chain=chain_name, last_scanned_block=0)
             db.add(chain_state)
@@ -33,13 +34,14 @@ def add_chain_states(db: Session, chains: Dict[str, BlockchainBase]):
             decimals = token_cfg.get("decimals", 18)
 
             # Check if token already exists
-            existing_token = db.execute(
+            result = await db.execute(
                 select(Token).where(
                     Token.chain == chain_name,
                     Token.symbol == symbol,
                     Token.address == address
                 )
-            ).scalar_one_or_none()
+            )
+            existing_token = result.scalar_one_or_none()
 
             if not existing_token:
                 db.add(Token(
@@ -49,4 +51,4 @@ def add_chain_states(db: Session, chains: Dict[str, BlockchainBase]):
                     decimals=decimals
                 ))
 
-    db.commit()
+    await db.commit()

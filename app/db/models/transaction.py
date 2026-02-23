@@ -32,5 +32,7 @@ class Transaction(Base):
     block_number = Column(Integer, nullable=True)
     confirmations = Column(Integer, default=0, nullable=False)
     status = Column(
-        Enum(TransactionStatus), default=TransactionStatus.PENDING, nullable=False
+        Enum(TransactionStatus, values_callable=lambda obj: [item.value for item in obj]),
+        default=TransactionStatus.PENDING,
+        nullable=False
     )

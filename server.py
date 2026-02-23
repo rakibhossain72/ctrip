@@ -10,7 +10,7 @@ from app.api.health import health_router
 from app.api.v1.payments import router as payments_router
 from app.utils.crypto import HDWalletManager
 from app.blockchain.manager import get_blockchains
-from app.db.session import SessionLocal
+from app.db.async_session import AsyncSessionLocal
 from app.db.seed import add_chain_states
 from app.core.config import settings
 from app.workers.listener import listen_for_payments
@@ -31,7 +31,8 @@ async def lifespan(fastapi_app: FastAPI) -> AsyncIterator[None]:
     # Use: python migrate.py upgrade
     # Base.metadata.create_all(bind=engine)
 
-    add_chain_states(SessionLocal(), fastapi_app.state.blockchains)
+    async with AsyncSessionLocal() as session:
+        await add_chain_states(session, fastapi_app.state.blockchains)
 
     # Trigger background workers via Dramatiq
     listen_for_payments.send()
