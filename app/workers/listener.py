@@ -10,32 +10,42 @@ CONFIRMATIONS_REQUIRED = 1
 BLOCK_BATCH_SIZE = 20
 
 
-async def listen_for_payments(ctx):
-    """
-    ARQ task that runs the scanner service to detect new payments.
-    Runs every 5 seconds via cron.
-    """
-    try:
-        logger.info("ARQ task: listen_for_payments triggered")
-        chains = get_enabled_chains()
+import asyncio
 
+async def scan_and_confirm(chain_name: str):
+    """Helper to scan and confirm payments for a single chain with its own session."""
+    try:
         async with async_session() as session:
             scanner = ScannerService(
                 session,
                 confirmations_required=CONFIRMATIONS_REQUIRED,
                 block_batch_size=BLOCK_BATCH_SIZE
             )
-            for chain_name in chains:
-                await scanner.scan_chain(chain_name)
-                await scanner.confirm_payments(chain_name)
-            
-            # Check for expired payments across all chains
-            await scanner.check_expired_payments()
+            await scanner.scan_chain(chain_name)
+            await scanner.confirm_payments(chain_name)
+    except Exception as e:
+        logger.error(f"❌ Error scanning chain {chain_name}: {e}", exc_info=True)
 
-        logger.info("Payment scan cycle complete")
+
+async def listen_for_payments(ctx):
+    """
+    ARQ task that runs the scanner service to detect new payments.
+    Runs every second via cron.
+    """
+    try:
+        chains = get_enabled_chains()
+
+        # Scan all chains concurrently, each with its own session
+        if chains:
+            await asyncio.gather(*(scan_and_confirm(chain_name) for chain_name in chains))
+        
+        # Check for expired payments (uses its own session)
+        async with async_session() as session:
+            scanner = ScannerService(session)
+            await scanner.check_expired_payments()
         
     except Exception as e:
-        logger.error("Error in listener: %s", e, exc_info=True)
+        logger.error("❌ Error in listener: %s", e, exc_info=True)
         raise  # ARQ will handle retries
 
 

@@ -3,6 +3,7 @@ Service for scaning blocks from blockchain to check payments
 """
 
 import datetime
+import asyncio
 import logging
 from dataclasses import dataclass
 from typing import Dict
@@ -39,6 +40,7 @@ class ScannerService:
         self.session = session
         self.confirmations_required = confirmations_required
         self.block_batch_size = block_batch_size
+        self._semaphore = asyncio.Semaphore(5)  # Limit concurrent block fetches for memory optimization
 
     async def _dispatch_webhook(self, payment: Payment):
         """Helper to send webhook notifications directly."""
@@ -62,13 +64,13 @@ class ScannerService:
     # pylint: disable=too-many-locals,too-many-branches,too-many-nested-blocks
     async def scan_chain(self, chain_name: str):
         """Scan a specific chain for pending payments."""
-        logger.info("Scanning chain: %s", chain_name)
+        logger.debug("Scanning chain: %s", chain_name)
 
         w3 = get_w3(chain_name)
         state = await self._load_chain_state(chain_name)
 
         if not state:
-            logger.warning("No chain state found for %s, skipping", chain_name)
+            logger.debug("No chain state found for %s, skipping", chain_name)
             return
 
         from_block, to_block = await self._calculate_scan_range(w3, state)
@@ -85,6 +87,7 @@ class ScannerService:
         payment_list = list(payments_res.scalars())
 
         if not payment_list:
+            # If no active payments, we still update the block state but don't log every block
             state.last_scanned_block = to_block
             await self.session.commit()
             return
@@ -117,16 +120,22 @@ class ScannerService:
             from_block=from_block,
             to_block=to_block,
             context=scan_context,
+            chain_name=chain_name
         )
 
         state.last_scanned_block = to_block
         await self.session.commit()
-        logger.info("Scan complete for %s. Detected: %s", chain_name, detected_count)
+        if detected_count > 0:
+            logger.info("[%s] Scan complete. Detected: %s", chain_name, detected_count)
 
     async def confirm_payments(self, chain_name: str):
         """Check for confirmations of detected payments."""
         w3 = get_w3(chain_name)
-        latest_block = await w3.eth.block_number
+        try:
+            latest_block = await w3.eth.block_number
+        except Exception as e:
+            logger.error(f"Error getting latest block for {chain_name}: {e}")
+            return
 
         payments_res = await self.session.execute(
             select(Payment).where(
@@ -174,7 +183,12 @@ class ScannerService:
             await self.session.commit()
 
     async def _calculate_scan_range(self, w3, state):
-        latest_block = await w3.eth.block_number
+        try:
+            latest_block = await w3.eth.block_number
+        except Exception as e:
+            logger.error(f"Error getting block number for {state.chain}: {e}")
+            return state.last_scanned_block + 1, state.last_scanned_block
+            
         from_block = state.last_scanned_block + 1
         to_block = min(from_block + self.block_batch_size, latest_block)
         return from_block, to_block
@@ -186,52 +200,70 @@ class ScannerService:
         return state_res.scalar_one_or_none()
 
     async def _scan_blocks_for_payments(
-        self, w3, from_block: int, to_block: int, context: PaymentScanContext
+        self, w3, from_block: int, to_block: int, context: PaymentScanContext, chain_name: str
     ):
-        """Scan blocks for native and ERC20 payments."""
-        detected_count = 0
-
+        """Scan blocks for native and ERC20 payments in parallel."""
+        tasks = []
         for block_number in range(from_block, to_block + 1):
-            block = await w3.eth.get_block(block_number, full_transactions=True)
+            tasks.append(self._scan_single_block(w3, block_number, context, chain_name))
+        
+        results = await asyncio.gather(*tasks)
+        return sum(results)
 
-            # Native transfers
-            for tx in block.transactions:
-                if not tx.to:
-                    continue
-                addr = tx.to.lower()
-                if addr in context.native_payments:
-                    payment = context.native_payments[addr]
-                    if tx.value >= payment.amount:
-                        logger.info("Native Payment detected! ID: %s", payment.id)
-                        payment.status = PaymentStatus.DETECTED
-                        payment.detected_in_block = block_number
-                        detected_count += 1
-                        await self._dispatch_webhook(payment)
-
-            # ERC20 transfers
-            if context.erc20_payments:
-                logs = await w3.eth.get_logs(
-                    {
-                        "from_block": block_number,
-                        "to_block": block_number,
-                        "topics": [ERC20_TRANSFER_TOPIC],
-                    }
-                )
-                for log in logs:
-                    if len(log.topics) < 3:
+    async def _scan_single_block(
+        self, w3, block_number: int, context: PaymentScanContext, chain_name: str
+    ) -> int:
+        """Scan a single block for payments."""
+        detected_count = 0
+        
+        async with self._semaphore:
+            try:
+                # Log only when we actually start fetching/processing a block
+                logger.info("[%s] Fetched block: %s", chain_name, block_number)
+                block = await w3.eth.get_block(block_number, full_transactions=True)
+                
+                # Native transfers
+                for tx in block.transactions:
+                    if not tx.to:
                         continue
-                    to_address = "0x" + log.topics[2].hex()[-40:].lower()
-                    if to_address in context.erc20_payments:
-                        payment = context.erc20_payments[to_address]
-                        token = context.tokens.get(payment.token_id)
-                        if token and log.address.lower() == token.address.lower():
-                            value = int(log.data.hex(), 16) if log.data else 0
-                            if value >= payment.amount:
-                                logger.info(
-                                    "ERC20 Payment detected! ID: %s", payment.id
-                                )
-                                payment.status = PaymentStatus.DETECTED
-                                payment.detected_in_block = block_number
-                                detected_count += 1
-                                await self._dispatch_webhook(payment)
+                    addr = tx.to.lower()
+                    if addr in context.native_payments:
+                        payment = context.native_payments[addr]
+                        if tx.value >= payment.amount:
+                            logger.info("[%s] Native Payment detected in block %s! ID: %s", chain_name, block_number, payment.id)
+                            payment.status = PaymentStatus.DETECTED
+                            payment.detected_in_block = block_number
+                            detected_count += 1
+                            await self._dispatch_webhook(payment)
+
+                # ERC20 transfers
+                if context.erc20_payments:
+                    logs = await w3.eth.get_logs(
+                        {
+                            "from_block": block_number,
+                            "to_block": block_number,
+                            "topics": [ERC20_TRANSFER_TOPIC],
+                        }
+                    )
+                    for log in logs:
+                        if len(log.topics) < 3:
+                            continue
+                        to_address = "0x" + log.topics[2].hex()[-40:].lower()
+                        if to_address in context.erc20_payments:
+                            payment = context.erc20_payments[to_address]
+                            token = context.tokens.get(payment.token_id)
+                            if token and log.address.lower() == token.address.lower():
+                                value = int(log.data.hex(), 16) if log.data else 0
+                                if value >= payment.amount:
+                                    logger.info(
+                                        "[%s] ERC20 Payment detected in block %s! ID: %s", chain_name, block_number, payment.id
+                                    )
+                                    payment.status = PaymentStatus.DETECTED
+                                    payment.detected_in_block = block_number
+                                    detected_count += 1
+                                    await self._dispatch_webhook(payment)
+                                    
+            except Exception as e:
+                logger.error(f"[%s] Error scanning block {block_number}: {e}")
+            
         return detected_count

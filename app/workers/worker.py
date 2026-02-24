@@ -48,8 +48,8 @@ class WorkerSettings:
     
     # Scheduled tasks (cron jobs)
     cron_jobs = [
-        # Scan for payments every 5 seconds
-        cron(listen_for_payments, second={0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55}),
+        # Scan for payments every second
+        cron(listen_for_payments, second=set(range(60))),
         
         # Sweep funds every 30 seconds
         cron(sweep_funds, second={0, 30}),

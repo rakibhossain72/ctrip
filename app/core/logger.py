@@ -48,6 +48,10 @@ def setup_logging(level=logging.INFO):
     app_logger = logging.getLogger("app")
     app_logger.info("Logging initialized. Logs are saved in %s", LOG_FILE)
 
+    # Silence arq worker logs
+    logging.getLogger("arq").setLevel(logging.WARNING)
+    logging.getLogger("arq.worker").setLevel(logging.WARNING)
+
 
 # Initialize logging immediately upon module import
 setup_logging()
