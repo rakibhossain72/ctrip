@@ -9,15 +9,15 @@
 #         address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
 #         decimals: 6
 
-  - name: bsc
-    rpc_url: https://bsc-dataseed.binance.org/
-    tokens:
-      - symbol: USDT
-        address: "0x55d398326f99059fF775485246999027B3197955"
-        decimals: 18
-
-  # - name: anvil
-  #   rpc_url: http://localhost:8545
+  # - name: bsc
+  #   rpc_url: https://bsc-dataseed.binance.org/
   #   tokens:
-  #     - symbol: ETH
+  #     - symbol: USDT
+  #       address: "0x55d398326f99059fF775485246999027B3197955"
   #       decimals: 18
+
+  - name: anvil
+    rpc_url: http://localhost:8545
+    tokens:
+      - symbol: ETH
+        decimals: 18

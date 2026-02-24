@@ -39,7 +39,7 @@ services:
 
   worker:
     build: .
-    command: dramatiq app.workers.listener
+    command: python run_worker.py
     volumes:
       - .:/app
     environment:
@@ -54,6 +54,7 @@ services:
     depends_on:
       - db
       - redis
+    restart: unless-stopped
 
 volumes:
   postgres_data:

@@ -7,7 +7,7 @@ cTrip is a high-performance, multi-chain cryptocurrency payment gateway built wi
 - **Multi-Chain Support**: Native support for BSC, Ethereum, and local testing environments (Anvil).
 - **Automated Detection**: Real-time scanning of blockchain blocks to detect incoming payments.
 - **Async Architecture**: Fully asynchronous API and database operations using SQLAlchemy and FastAPI.
-- **Background Workers**: Distributed task processing using Dramatiq and Redis for reliable background operations.
+- **Background Workers**: Async task processing using ARQ and Redis with built-in cron scheduling.
 - **Secure Address Management**: HD Wallet integration for generating unique payment addresses.
 - **Webhooks**: Automated notifications for payment status changes.
 - **Migration System**: Robust database migrations using Alembic with a custom helper script.
@@ -17,7 +17,7 @@ cTrip is a high-performance, multi-chain cryptocurrency payment gateway built wi
 - **Framework**: [FastAPI](https://fastapi.tiangolo.com/)
 - **Database**: [PostgreSQL](https://www.postgresql.org/) / [SQLite](https://www.sqlite.org/) (Dev)
 - **ORM**: [SQLAlchemy 2.0](https://www.sqlalchemy.org/)
-- **Task Queue**: [Dramatiq](https://dramatiq.io/) with Redis
+- **Task Queue**: [ARQ](https://arq-docs.helpmanual.io/) with Redis
 - **Blockchain**: [Web3.py](https://web3py.readthedocs.io/)
 - **Migrations**: [Alembic](https://alembic.sqlalchemy.org/)
 
@@ -65,7 +65,7 @@ This will start the API, PostgreSQL, Redis, and background workers.
 
 4. **Start Workers**:
    ```bash
-   dramatiq app.workers.listener app.workers.sweeper app.workers.webhook
+   python run_worker.py
    ```
 
 ## Project Structure

@@ -15,7 +15,7 @@ URL = "http://127.0.0.1:8000/api/v1/payments/"
 
 payload = json.dumps({
   "amount": 100000000000,
-  "chain": "anvil"
+  "chain": "anvil",
 })
 headers = {
   'Content-Type': 'application/json',
