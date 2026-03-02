@@ -149,22 +149,3 @@ async def send_custom_webhook(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-
-@router.get("/job/{job_id}")
-async def get_job_status(
-    job_id: str,
-    client: WorkerClient = Depends(get_worker_client)
-):
-    """
-    Get the status and result of a background job.
-    Returns job status, result, and any error information.
-    """
-    try:
-        status = await client.get_job_status(job_id)
-        if not status:
-            raise HTTPException(status_code=404, detail="Job not found")
-        return status
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))

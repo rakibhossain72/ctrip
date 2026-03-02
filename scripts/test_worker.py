@@ -28,18 +28,9 @@ async def test_worker():
         # Wait a bit for job to process
         await asyncio.sleep(2)
         
-        # Test 3: Check job status
-        print("\n3️⃣  Checking job status...")
-        status = await client.get_job_status(job_id)
-        if status:
-            print(f"   ✅ Job status: {status['status']}")
-            if status.get('result'):
-                print(f"   📊 Result: {status['result']}")
-        else:
-            print("   ⚠️  Job not found (may have completed)")
         
-        # Test 4: Trigger sweep
-        print("\n4️⃣  Triggering fund sweep...")
+        # Test 3: Trigger sweep
+        print("\n3️⃣  Triggering fund sweep...")
         sweep_job_id = await client.trigger_sweep()
         print(f"   ✅ Sweep job enqueued: {sweep_job_id}")
         
@@ -49,6 +40,7 @@ async def test_worker():
         print("Check worker logs to see job execution.")
         
     except Exception as e:
+        # raise e
         print(f"\n❌ Error: {e}")
         print("\nTroubleshooting:")
         print("1. Make sure Redis is running: redis-cli ping")

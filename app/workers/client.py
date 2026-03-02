@@ -78,20 +78,6 @@ class WorkerClient:
         job = await pool.enqueue_job('send_custom_webhook', url, payload, secret)
         logger.info(f"Enqueued custom webhook job: {job.job_id}")
         return job.job_id
-    
-    # Job status
-    async def get_job_status(self, job_id: str) -> Optional[Dict[str, Any]]:
-        """Get status of a job"""
-        pool = await self.get_pool()
-        job = await pool.get_job(job_id)
-        if job:
-            return {
-                'job_id': job.job_id,
-                'status': await job.status(),
-                'result': await job.result(),
-            }
-        return None
-
 
 # Global client instance
 worker_client = WorkerClient()
