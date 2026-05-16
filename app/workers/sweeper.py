@@ -16,7 +16,7 @@ async def sweep_funds(ctx):
     """
     try:
         logger.info("="*60)
-        logger.info("🧹 ARQ task: sweep_funds triggered")
+        logger.info("ARQ task: sweep_funds triggered")
         logger.info("="*60)
         chains = get_enabled_chains()
         
@@ -28,13 +28,13 @@ async def sweep_funds(ctx):
             for chain_name in chains:
                 logger.info(f"Sweeping chain: {chain_name}")
                 await sweeper_service.sweep_confirmed_payments(chain_name)
-                logger.info(f"✅ Sweep completed for {chain_name}")
+                logger.info(f"Sweep completed for {chain_name}")
 
-        logger.info("🧹 Sweep cycle complete")
+        logger.info("Sweep cycle complete")
         logger.info("="*60)
         
     except Exception as e:
-        logger.error("❌ Error in sweeper: %s", e, exc_info=True)
+        logger.error("Error in sweeper: %s", e, exc_info=True)
         raise
 
 

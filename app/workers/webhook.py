@@ -76,7 +76,7 @@ async def retry_failed_webhooks(ctx):
     """
     try:
         logger.info("="*60)
-        logger.info("🔄 ARQ task: retry_failed_webhooks triggered")
+        logger.info("ARQ task: retry_failed_webhooks triggered")
         logger.info("="*60)
         
         # TODO: Implement webhook retry logic
@@ -85,11 +85,11 @@ async def retry_failed_webhooks(ctx):
         # 3. Retry each webhook
         # 4. Update retry count and status
         
-        logger.info("🔄 Webhook retry cycle complete (placeholder)")
+        logger.info("Webhook retry cycle complete (placeholder)")
         logger.info("="*60)
         
     except Exception as e:
-        logger.error("❌ Error in webhook retry: %s", e, exc_info=True)
+        logger.error("Error in webhook retry: %s", e, exc_info=True)
         raise
 
 

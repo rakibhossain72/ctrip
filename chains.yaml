@@ -17,7 +17,7 @@
   #       decimals: 18
 
   - name: anvil
-    rpc_url: http://localhost:8545
+    rpc_url: ws://localhost:8545
     tokens:
       - symbol: ETH
         decimals: 18
