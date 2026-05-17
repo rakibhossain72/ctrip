@@ -40,6 +40,24 @@ def _get_ws_url(chain_name: str) -> str | None:
     return None
 
 
+async def _dispatch_payment_webhook(payment: Payment) -> None:
+    """Send a webhook notification for a payment status change."""
+    if not settings.webhook_url:
+        return
+    payload = {
+        "payment_id": str(payment.id),
+        "status": payment.status.value,
+        "address": payment.address,
+        "amount": str(payment.amount),
+        "chain": payment.chain,
+        "token_id": str(payment.token_id) if payment.token_id else None,
+        "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+    }
+    await WebhookService.send_webhook(
+        settings.webhook_url, payload, settings.webhook_secret
+    )
+
+
 class ScannerService:
     """
     Handles payment detection (via chain-sniper WebSocket listeners),
@@ -57,20 +75,7 @@ class ScannerService:
     # ------------------------------------------------------------------
 
     async def _dispatch_webhook(self, payment: Payment) -> None:
-        if not settings.webhook_url:
-            return
-        payload = {
-            "payment_id": str(payment.id),
-            "status": payment.status.value,
-            "address": payment.address,
-            "amount": str(payment.amount),
-            "chain": payment.chain,
-            "token_id": str(payment.token_id) if payment.token_id else None,
-            "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
-        }
-        await WebhookService.send_webhook(
-            settings.webhook_url, payload, settings.webhook_secret
-        )
+        await _dispatch_payment_webhook(payment)
 
     # ------------------------------------------------------------------
     # Confirmation & expiry (still cron-driven — no change needed here)
@@ -81,7 +86,7 @@ class ScannerService:
         w3 = get_w3(chain_name)
         try:
             latest_block = await w3.eth.block_number
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-exception-caught
             logger.error("Error getting latest block for %s: %s", chain_name, e)
             return
 
@@ -172,9 +177,8 @@ class ScannerService:
 
             if detected:
                 await session.commit()
-                svc = ScannerService(session)
                 for payment in detected:
-                    await svc._dispatch_webhook(payment)
+                    await _dispatch_payment_webhook(payment)
 
     @staticmethod
     async def _on_log(log: dict, chain_name: str) -> None:
@@ -225,8 +229,7 @@ class ScannerService:
             payment.status = PaymentStatus.DETECTED
             payment.detected_in_block = block_number
             await session.commit()
-            svc = ScannerService(session)
-            await svc._dispatch_webhook(payment)
+            await _dispatch_payment_webhook(payment)
 
     @staticmethod
     def _build_sniper(chain_name: str, ws_url: str) -> ChainSniper:
@@ -237,13 +240,13 @@ class ScannerService:
         async def on_block(block: dict) -> None:
             try:
                 await ScannerService._on_block(block, chain_name)
-            except Exception as exc:
+            except Exception as exc:  # pylint: disable=broad-exception-caught
                 logger.error("[%s] Block handler error: %s", chain_name, exc, exc_info=True)
 
         async def on_log(log: dict) -> None:
             try:
                 await ScannerService._on_log(log, chain_name)
-            except Exception as exc:
+            except Exception as exc:  # pylint: disable=broad-exception-caught
                 logger.error("[%s] Log handler error: %s", chain_name, exc, exc_info=True)
 
         async def on_error(exc: Exception) -> None:

@@ -1,31 +1,41 @@
 """
 Admin API endpoints for manual worker task triggering.
 """
+from typing import Optional, Dict, Any
+
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
-from typing import Optional, Dict, Any
+
 from app.workers.client import get_worker_client, WorkerClient
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
 
 class SweepAddressRequest(BaseModel):
+    """Request model for sweeping a specific address."""
+
     address: str
     chain_name: str
 
 
 class ProcessPaymentRequest(BaseModel):
+    """Request model for processing a specific payment."""
+
     payment_id: int
     chain_name: str
 
 
 class CustomWebhookRequest(BaseModel):
+    """Request model for sending a custom webhook."""
+
     url: str
     payload: Dict[str, Any]
     secret: Optional[str] = None
 
 
 class JobResponse(BaseModel):
+    """Response model for enqueued jobs."""
+
     job_id: str
     status: str
     message: str
@@ -45,7 +55,7 @@ async def trigger_payment_scan(client: WorkerClient = Depends(get_worker_client)
             message="Payment scan triggered successfully"
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.post("/sweep-now", response_model=JobResponse)
@@ -62,7 +72,7 @@ async def trigger_fund_sweep(client: WorkerClient = Depends(get_worker_client)):
             message="Fund sweep triggered successfully"
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.post("/sweep-address", response_model=JobResponse)
@@ -82,7 +92,7 @@ async def sweep_specific_address(
             message=f"Sweep triggered for {request.address} on {request.chain_name}"
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.post("/process-payment", response_model=JobResponse)
@@ -102,7 +112,7 @@ async def process_payment(
             message=f"Processing payment {request.payment_id}"
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.post("/send-webhook", response_model=JobResponse)
@@ -123,7 +133,7 @@ async def send_webhook(
             message=f"Webhook queued for payment {payment_id}"
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.post("/custom-webhook", response_model=JobResponse)
@@ -147,5 +157,4 @@ async def send_custom_webhook(
             message=f"Custom webhook queued to {request.url}"
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
+        raise HTTPException(status_code=500, detail=str(e)) from e

@@ -1,10 +1,13 @@
 """
 ARQ worker initialization and configuration.
 """
+from urllib.parse import urlparse
+
 from arq import create_pool
 from arq.connections import RedisSettings
+
 from app.core.config import settings
-from urllib.parse import urlparse
+
 
 def get_redis_settings() -> RedisSettings:
     """Parse Redis URL and return ARQ RedisSettings"""
@@ -14,6 +17,7 @@ def get_redis_settings() -> RedisSettings:
         port=parsed.port or 6379,
         database=int(parsed.path.lstrip('/')) if parsed.path else 0,
     )
+
 
 # Export for easy imports
 __all__ = ['get_redis_settings', 'create_pool']
