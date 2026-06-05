@@ -1,14 +1,23 @@
 """
-Admin API endpoints for manual worker task triggering.
+Admin API endpoints for manual worker task triggering and API key management.
+All endpoints require a valid X-Admin-Key header.
 """
-from typing import Optional, Dict, Any
+import datetime
+from typing import Optional, Dict, Any, List
+from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 
+from app.api.dependencies import require_admin
+from app.core.security import generate_api_key
+from app.db.async_session import get_async_db
+from app.db.models.api_key import ApiKey
 from app.workers.client import get_worker_client, WorkerClient
 
-router = APIRouter(prefix="/admin", tags=["admin"])
+router = APIRouter(prefix="/admin", tags=["admin"], dependencies=[Depends(require_admin)])
 
 
 class SweepAddressRequest(BaseModel):
@@ -158,3 +167,95 @@ async def send_custom_webhook(
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+# ---------------------------------------------------------------------------
+# API Key management schemas
+# ---------------------------------------------------------------------------
+
+class ApiKeyCreateRequest(BaseModel):
+    """Request body for creating a new API key."""
+    name: str
+
+
+class ApiKeyResponse(BaseModel):
+    """Response for a created or listed API key."""
+    id: UUID
+    name: str
+    key_prefix: str
+    is_active: bool
+    created_at: datetime.datetime
+    last_used_at: Optional[datetime.datetime] = None
+
+    model_config = {"from_attributes": True}
+
+
+class ApiKeyCreatedResponse(ApiKeyResponse):
+    """Returned once at creation — includes the raw key."""
+    raw_key: str
+
+
+# ---------------------------------------------------------------------------
+# API Key endpoints
+# ---------------------------------------------------------------------------
+
+@router.post(
+    "/api-keys",
+    response_model=ApiKeyCreatedResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Create a new API key",
+)
+async def create_api_key(
+    body: ApiKeyCreateRequest,
+    db: AsyncSession = Depends(get_async_db),
+):
+    """
+    Generate a new API key. The raw key is returned only once — store it securely.
+    Clients must pass it as the X-Api-Key header when creating payments.
+    """
+    raw_key, prefix, hashed_key = generate_api_key()
+
+    db_key = ApiKey(
+        name=body.name,
+        key_prefix=prefix,
+        hashed_key=hashed_key,
+    )
+    db.add(db_key)
+    await db.commit()
+    await db.refresh(db_key)
+
+    return ApiKeyCreatedResponse(
+        id=db_key.id,
+        name=db_key.name,
+        key_prefix=db_key.key_prefix,
+        is_active=db_key.is_active,
+        created_at=db_key.created_at,
+        last_used_at=db_key.last_used_at,
+        raw_key=raw_key,
+    )
+
+
+@router.get(
+    "/api-keys",
+    response_model=List[ApiKeyResponse],
+    summary="List all API keys",
+)
+async def list_api_keys(db: AsyncSession = Depends(get_async_db)):
+    """Return all API keys (active and revoked). Raw keys are never returned."""
+    result = await db.execute(select(ApiKey).order_by(ApiKey.created_at.desc()))
+    return result.scalars().all()
+
+
+@router.delete(
+    "/api-keys/{key_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Revoke an API key",
+)
+async def revoke_api_key(key_id: UUID, db: AsyncSession = Depends(get_async_db)):
+    """Deactivate an API key. The key will be rejected on subsequent requests."""
+    result = await db.execute(select(ApiKey).where(ApiKey.id == key_id))
+    db_key = result.scalars().first()
+    if not db_key:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="API key not found")
+    db_key.is_active = False
+    await db.commit()

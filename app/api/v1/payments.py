@@ -14,7 +14,7 @@ from app.db.async_session import get_async_db
 from app.db.models.payment import Payment, HDWalletAddress
 from app.db.models.token import Token
 from app.schemas.payment import PaymentCreate, PaymentRead
-from app.api.dependencies import get_hdwallet, get_blockchains
+from app.api.dependencies import get_hdwallet, get_blockchains, require_api_key
 from app.utils.crypto import HDWalletManager
 
 router = APIRouter(prefix="/api/v1/payments", tags=["payments"])
@@ -24,6 +24,7 @@ router = APIRouter(prefix="/api/v1/payments", tags=["payments"])
     "/",
     response_model=PaymentRead,
     status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(require_api_key)],
 )
 async def create_payment(
     payment_req: PaymentCreate,
