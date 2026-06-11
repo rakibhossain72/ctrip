@@ -19,7 +19,8 @@ payload = json.dumps({
 })
 headers = {
   'Content-Type': 'application/json',
-  'Accept': 'application/json'
+  'Accept': 'application/json',
+  'X-Api-Key': 'ck_atNWnm-4ncfKC8IyofQHl4XMQDX4PQaE3_Yi9CPRy14',
 }
 
 response = requests.request("POST", URL, headers=headers, data=payload, timeout=10)
@@ -29,7 +30,7 @@ if response.status_code == 201:
     payment = response.json()
     print("Payment created successfully:")
     print(json.dumps(payment, indent=4))
-
+    exit(0)
     tx = {
         'to': payment['address'],
         'value': int(payment['amount']),

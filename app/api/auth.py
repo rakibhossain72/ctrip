@@ -1,9 +1,4 @@
-"""
-Admin authentication: login, token refresh, and logout.
-Refresh tokens are stateless JWTs — no database storage required.
-"""
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
@@ -15,23 +10,9 @@ from app.core.security import (
 )
 from app.db.async_session import get_async_db
 from app.db.models.admin_user import AdminUser
+from app.schemas.auth import LoginRequest, TokenResponse, RefreshRequest
 
 router = APIRouter(prefix="/auth", tags=["auth"])
-
-
-class LoginRequest(BaseModel):
-    username: str
-    password: str
-
-
-class TokenResponse(BaseModel):
-    access_token: str
-    refresh_token: str
-    token_type: str = "bearer"
-
-
-class RefreshRequest(BaseModel):
-    refresh_token: str
 
 
 @router.post("/login", response_model=TokenResponse)
@@ -66,7 +47,4 @@ async def refresh(body: RefreshRequest):
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
 async def logout():
-    """
-    Logout is handled client-side by discarding the tokens.
-    Stateless JWTs cannot be server-side revoked without a blocklist.
-    """
+    """Logout is handled client-side by discarding the tokens."""

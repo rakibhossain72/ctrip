@@ -1,0 +1,29 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "DM Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "DM Mono", ui-monospace, SFMono-Regular, monospace;
+  
+  --color-brand-bg: #f8f7f5;
+  --color-brand-surface: #ffffff;
+  --color-brand-border: #e8e6e1;
+  --color-brand-border-dark: #d4d0c8;
+  --color-brand-text: #1a1916;
+  --color-brand-muted: #78756e;
+  --color-brand-dim: #a09d96;
+  --color-brand-accent: #1a1916;
+}
+
+@layer base {
+  body {
+    background-color: var(--color-brand-bg);
+    color: var(--color-brand-text);
+  }
+}
+
+/* Custom QR code repeating block logic */
+.qr-inner-pattern {
+  background: repeating-conic-gradient(#1a1916 0% 25%, #ffffff 0% 50%) 0 0/10px 10px;
+}
+

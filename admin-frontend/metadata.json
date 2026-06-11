@@ -1,0 +1,5 @@
+{
+  "name": "Ctrip Admin Panel",
+  "description": "Ctrip multi-chain payment operations, analytics, API keys, and system management dashboard.",
+  "requestFramePermissions": []
+}

@@ -12,3 +12,14 @@ __pycache__/
 .DS_Store
 dev_database.db
 logs/
+dump.rdb
+
+
+node_modules/
+build/
+dist/
+coverage/
+.DS_Store
+*.log
+.env*
+!.env.example

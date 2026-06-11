@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% block title %}Sign In — Ctrip Admin{% endblock %}
+
+{% block head %}
+<style>
+  body { display: flex; align-items: center; justify-content: center; min-height: 100vh; background: var(--muted); }
+
+  .login-wrap {
+    width: 100%;
+    max-width: 380px;
+    padding: 16px;
+  }
+
+  .login-logo {
+    text-align: center;
+    margin-bottom: 32px;
+  }
+  .login-logo .logo-mark {
+    width: 40px; height: 40px;
+    background: var(--primary);
+    border-radius: 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--primary-foreground);
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: 12px;
+  }
+  .login-logo h1 { font-size: 1.25rem; }
+  .login-logo p { font-size: 0.875rem; color: var(--muted-foreground); margin-top: 4px; }
+
+  .login-card { padding: 32px; }
+
+  .error-banner {
+    display: none;
+    background: #fee2e2;
+    border: 1px solid #fecaca;
+    color: #991b1b;
+    padding: 10px 14px;
+    border-radius: var(--radius);
+    font-size: 0.875rem;
+    margin-bottom: 16px;
+  }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="login-wrap">
+  <div class="login-logo">
+    <div class="logo-mark">C</div>
+    <h1>Ctrip Admin</h1>
+    <p>Sign in to your account</p>
+  </div>
+
+  <div class="card login-card">
+    <div id="errorBanner" class="error-banner"></div>
+
+    <form id="loginForm" onsubmit="handleLogin(event)">
+      <div class="form-group mb-4">
+        <label class="label" for="username">Username</label>
+        <input class="input" type="text" id="username" placeholder="admin" required autofocus />
+      </div>
+      <div class="form-group mb-6">
+        <label class="label" for="password">Password</label>
+        <input class="input" type="password" id="password" placeholder="••••••••" required />
+      </div>
+      <button type="submit" class="btn btn-primary" id="loginBtn" style="width:100%">Sign In</button>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  if (localStorage.getItem('access_token')) window.location.href = '/admin/dashboard';
+
+  async function handleLogin(e) {
+    e.preventDefault();
+    const btn = document.getElementById('loginBtn');
+    const err = document.getElementById('errorBanner');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Signing in…';
+    err.style.display = 'none';
+
+    try {
+      const res = await fetch('/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: document.getElementById('username').value,
+          password: document.getElementById('password').value,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || 'Login failed');
+      localStorage.setItem('access_token', data.access_token);
+      localStorage.setItem('refresh_token', data.refresh_token);
+      window.location.href = '/admin/dashboard';
+    } catch (err2) {
+      document.getElementById('errorBanner').textContent = err2.message;
+      document.getElementById('errorBanner').style.display = 'block';
+      btn.disabled = false;
+      btn.textContent = 'Sign In';
+    }
+  }
+</script>
+{% endblock %}

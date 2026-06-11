@@ -9,6 +9,7 @@ from sqlalchemy import select
 
 from app.core.security import decode_token, verify_api_key
 from app.db.models.api_key import ApiKey
+from app.db.async_session import get_async_db
 from app.utils.crypto import HDWalletManager
 
 _oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login", auto_error=False)
@@ -45,7 +46,6 @@ async def require_admin(token: str = Security(_oauth2_scheme)) -> str:
 
 async def require_api_key(key: str = Security(_api_key_scheme)) -> ApiKey:
     """Validates the X-Api-Key header against active API keys in the database."""
-    from app.db.async_session import get_async_db  # pylint: disable=import-outside-toplevel
 
     if not key:
         raise HTTPException(

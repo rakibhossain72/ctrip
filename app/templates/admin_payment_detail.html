@@ -1,0 +1,476 @@
+{% extends "base.html" %}
+{% block title %}Payment Detail — Ctrip Admin{% endblock %}
+
+{% block head %}
+<style>
+  body { background: var(--muted); min-height: 100vh; }
+
+  .topbar {
+    height: 57px;
+    background: var(--card);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0 24px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  .back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--muted-foreground);
+    text-decoration: none;
+    padding: 6px 10px;
+    border-radius: var(--radius);
+    transition: background 0.1s, color 0.1s;
+  }
+  .back-btn:hover { background: var(--accent); color: var(--foreground); }
+  .topbar-sep { color: var(--border); }
+  .topbar-title { font-weight: 600; font-size: 0.9375rem; }
+
+  .page { max-width: 1000px; margin: 0 auto; padding: 28px 24px; }
+
+  .page-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 24px;
+    gap: 16px;
+  }
+  .page-header h1 {
+    font-size: 1.125rem;
+    font-family: monospace;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  .page-header .meta { font-size: 0.8125rem; color: var(--muted-foreground); margin-top: 4px; }
+
+  .layout { display: grid; grid-template-columns: 1fr 320px; gap: 16px; align-items: start; }
+  @media (max-width: 800px) { .layout { grid-template-columns: 1fr; } }
+
+  .field-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 11px 0;
+    border-bottom: 1px solid var(--border);
+    gap: 16px;
+    font-size: 0.875rem;
+  }
+  .field-row:last-child { border-bottom: none; }
+  .field-label { color: var(--muted-foreground); font-weight: 500; flex-shrink: 0; }
+  .field-value { text-align: right; word-break: break-all; }
+
+  .address-copy {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    justify-content: flex-end;
+  }
+  .address-mono {
+    font-family: monospace;
+    font-size: 0.8125rem;
+    max-width: 220px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 9px;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    border: 1px solid transparent;
+  }
+  .badge-pending   { background:#fef9c3; color:#854d0e; border-color:#fef08a; }
+  .badge-detected  { background:#dbeafe; color:#1e40af; border-color:#bfdbfe; }
+  .badge-confirmed { background:#dcfce7; color:#166534; border-color:#bbf7d0; }
+  .badge-paid      { background:#dcfce7; color:#166534; border-color:#bbf7d0; }
+  .badge-settled   { background:#f0fdf4; color:#15803d; border-color:#86efac; }
+  .badge-expired   { background:#fee2e2; color:#991b1b; border-color:#fecaca; }
+  .badge-failed    { background:#fee2e2; color:#991b1b; border-color:#fecaca; }
+  .badge-secondary { background:var(--secondary); color:var(--secondary-foreground); border-color:var(--border); }
+  .badge-success   { background:#dcfce7; color:#166534; border-color:#bbf7d0; }
+  .badge-destructive { background:#fee2e2; color:#991b1b; border-color:#fecaca; }
+
+  .section-title {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    margin-bottom: 12px;
+  }
+
+  .timeline { display: flex; flex-direction: column; gap: 0; }
+  .timeline-item {
+    display: flex;
+    gap: 14px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.875rem;
+  }
+  .timeline-item:last-child { border-bottom: none; }
+  .tl-dot-wrap { display: flex; flex-direction: column; align-items: center; flex-shrink: 0; padding-top: 3px; }
+  .tl-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+  .tl-dot-success { background: var(--success); }
+  .tl-dot-pending { background: var(--warning); }
+  .tl-dot-failed  { background: var(--destructive); }
+  .tl-line { width: 1px; flex: 1; background: var(--border); margin-top: 4px; }
+  .tl-body { flex: 1; min-width: 0; }
+  .tl-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 2px; }
+  .tl-event { font-weight: 500; }
+  .tl-time { font-size: 0.75rem; color: var(--muted-foreground); white-space: nowrap; }
+  .tl-detail { color: var(--muted-foreground); font-size: 0.8125rem; }
+  .tl-error { color: var(--destructive); font-size: 0.8125rem; margin-top: 4px; }
+
+  .tx-hash {
+    font-family: monospace;
+    font-size: 0.8125rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 260px;
+    display: inline-block;
+    vertical-align: bottom;
+  }
+
+  .loader-state { text-align: center; padding: 64px 24px; color: var(--muted-foreground); }
+  .loader-spinner {
+    width: 32px; height: 32px;
+    border: 3px solid var(--border);
+    border-top-color: var(--foreground);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    margin: 0 auto 12px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .error-state {
+    text-align: center;
+    padding: 64px 24px;
+    color: var(--muted-foreground);
+  }
+
+  .actions-col { display: flex; flex-direction: column; gap: 12px; }
+  .action-card { padding: 18px 20px; }
+  .action-card h3 { font-size: 0.875rem; font-weight: 600; margin-bottom: 12px; }
+
+  .empty-note { color: var(--muted-foreground); font-size: 0.875rem; padding: 20px 0; text-align: center; }
+</style>
+{% endblock %}
+
+{% block body %}
+<header class="topbar">
+  <a href="/admin/dashboard" class="back-btn">← Back</a>
+  <span class="topbar-sep">/</span>
+  <span class="topbar-title">Payment Detail</span>
+</header>
+
+<div class="page">
+  <div id="loaderState" class="loader-state">
+    <div class="loader-spinner"></div>
+    <p>Loading payment…</p>
+  </div>
+
+  <div id="errorState" class="error-state" style="display:none">
+    <p id="errorMsg" style="color:var(--destructive)"></p>
+  </div>
+
+  <div id="mainContent" style="display:none">
+    <div class="page-header">
+      <div>
+        <h1 id="pageId"></h1>
+        <div class="meta" id="pageMeta"></div>
+      </div>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <span id="pageStatusBadge"></span>
+        <a id="publicLink" href="#" target="_blank" class="btn btn-outline btn-sm">Public Page ↗</a>
+      </div>
+    </div>
+
+    <div class="layout">
+      <!-- Left: details + transactions + webhooks -->
+      <div>
+        <!-- Payment info -->
+        <div class="card mb-6">
+          <div class="card-header">
+            <div class="card-title">Payment Info</div>
+          </div>
+          <div class="card-content" style="padding: 0 24px;">
+            <div class="field-row">
+              <span class="field-label">Chain</span>
+              <span class="field-value"><span class="badge badge-secondary" id="fChain"></span></span>
+            </div>
+            <div class="field-row">
+              <span class="field-label">Address</span>
+              <span class="field-value">
+                <div class="address-copy">
+                  <span class="address-mono" id="fAddress" title=""></span>
+                  <button class="btn btn-outline btn-sm" onclick="copyAddress()">Copy</button>
+                </div>
+              </span>
+            </div>
+            <div class="field-row">
+              <span class="field-label">Amount</span>
+              <span class="field-value font-mono" id="fAmount"></span>
+            </div>
+            <div class="field-row">
+              <span class="field-label">Confirmations</span>
+              <span class="field-value" id="fConf"></span>
+            </div>
+            <div class="field-row">
+              <span class="field-label">Detected in Block</span>
+              <span class="field-value" id="fBlock"></span>
+            </div>
+            <div class="field-row">
+              <span class="field-label">Token ID</span>
+              <span class="field-value font-mono text-sm" id="fToken"></span>
+            </div>
+            <div class="field-row">
+              <span class="field-label">Created</span>
+              <span class="field-value text-sm" id="fCreated"></span>
+            </div>
+            <div class="field-row">
+              <span class="field-label">Expires</span>
+              <span class="field-value text-sm" id="fExpires"></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Transactions -->
+        <div class="card mb-6">
+          <div class="card-header">
+            <div class="card-title">Transactions</div>
+            <span id="txCount" class="badge badge-secondary">0</span>
+          </div>
+          <div id="txContent" class="card-content" style="padding: 0 24px;"></div>
+        </div>
+
+        <!-- Webhook attempts -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Webhook Attempts</div>
+            <span id="whCount" class="badge badge-secondary">0</span>
+          </div>
+          <div id="whContent" class="card-content" style="padding: 0 24px;"></div>
+        </div>
+      </div>
+
+      <!-- Right: actions -->
+      <div class="actions-col">
+        <div class="card action-card">
+          <h3>Operations</h3>
+          <div style="display:flex; flex-direction:column; gap:8px;">
+            <button class="btn btn-secondary" onclick="triggerScan()">⟳ &nbsp;Scan Payment</button>
+            <button class="btn btn-secondary" onclick="openSweep()">↑ &nbsp;Sweep Address</button>
+          </div>
+        </div>
+
+        <div class="card action-card" id="webhookCard">
+          <h3>Send Webhook</h3>
+          <div class="form-group" style="margin-bottom:10px;">
+            <select class="input" id="webhookEvent" style="font-size:0.8125rem;">
+              <option value="payment.confirmed">payment.confirmed</option>
+              <option value="payment.expired">payment.expired</option>
+              <option value="payment.swept">payment.swept</option>
+            </select>
+          </div>
+          <button class="btn btn-primary" style="width:100%" onclick="sendWebhook()">Send</button>
+          <div id="webhookResult" style="margin-top:10px; font-size:0.8125rem; color:var(--muted-foreground); display:none;"></div>
+        </div>
+
+        <div class="card action-card" id="sweepCard" style="display:none">
+          <h3>Sweep Address</h3>
+          <div class="form-group" style="margin-bottom:10px;">
+            <label class="label" style="font-size:0.8125rem;">Chain</label>
+            <input class="input" id="sweepChain" style="font-size:0.8125rem;" />
+          </div>
+          <div style="display:flex; gap:8px;">
+            <button class="btn btn-primary" style="flex:1" onclick="sweepAddress()">Sweep</button>
+            <button class="btn btn-outline" onclick="closeSweep()">Cancel</button>
+          </div>
+          <div id="sweepResult" style="margin-top:10px; font-size:0.8125rem; color:var(--muted-foreground); display:none;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const paymentId = "{{ payment_id }}";
+  const token = localStorage.getItem('access_token');
+  if (!token) window.location.href = '/admin/login';
+
+  let paymentData = null;
+
+  function getHeaders() {
+    return { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
+  }
+
+  async function api(method, url, body) {
+    const opts = { method, headers: getHeaders() };
+    if (body) opts.body = JSON.stringify(body);
+    const res = await fetch(url, opts);
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.detail || `HTTP ${res.status}`);
+    return data;
+  }
+
+  function statusBadge(s) {
+    return `<span class="badge badge-${s}">${s}</span>`;
+  }
+
+  function fmtDate(iso) {
+    return new Date(iso).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'medium' });
+  }
+
+  async function loadPayment() {
+    try {
+      const p = await api('GET', `/admin/analytics/payments/${paymentId}`);
+      paymentData = p;
+
+      document.getElementById('loaderState').style.display = 'none';
+      document.getElementById('mainContent').style.display = 'block';
+
+      document.getElementById('pageId').textContent = p.id;
+      document.getElementById('pageMeta').textContent = `Created ${fmtDate(p.created_at)}`;
+      document.getElementById('pageStatusBadge').innerHTML = statusBadge(p.status);
+      document.getElementById('publicLink').href = `/payment/${p.id}`;
+
+      document.getElementById('fChain').textContent = p.chain.toUpperCase();
+      const addrEl = document.getElementById('fAddress');
+      addrEl.textContent = p.address;
+      addrEl.title = p.address;
+      document.getElementById('fAmount').textContent = p.amount_wei;
+      document.getElementById('fConf').textContent = p.confirmations;
+      document.getElementById('fBlock').textContent = p.detected_in_block ?? '—';
+      document.getElementById('fToken').textContent = p.token_id ?? '—';
+      document.getElementById('fCreated').textContent = fmtDate(p.created_at);
+      document.getElementById('fExpires').textContent = fmtDate(p.expires_at);
+
+      document.getElementById('sweepChain').value = p.chain;
+
+      renderTransactions(p.transactions);
+      renderWebhooks(p.webhooks);
+    } catch (e) {
+      document.getElementById('loaderState').style.display = 'none';
+      document.getElementById('errorState').style.display = 'block';
+      document.getElementById('errorMsg').textContent = `Failed to load: ${e.message}`;
+    }
+  }
+
+  function renderTransactions(txs) {
+    document.getElementById('txCount').textContent = txs.length;
+    const el = document.getElementById('txContent');
+    if (!txs.length) {
+      el.innerHTML = '<div class="empty-note">No transactions recorded yet.</div>';
+      return;
+    }
+    el.innerHTML = txs.map(t => `
+      <div class="field-row">
+        <span class="field-label">
+          <span class="badge badge-${t.status === 'confirmed' ? 'confirmed' : t.status === 'failed' ? 'failed' : 'pending'}">${t.status}</span>
+        </span>
+        <span class="field-value" style="min-width:0">
+          <span class="tx-hash" title="${t.tx_hash}">${t.tx_hash}</span>
+          <div class="text-xs text-muted" style="margin-top:2px">
+            Block ${t.block_number ?? '?'} · ${t.confirmations} conf.
+          </div>
+        </span>
+      </div>
+    `).join('');
+  }
+
+  function renderWebhooks(whs) {
+    document.getElementById('whCount').textContent = whs.length;
+    const el = document.getElementById('whContent');
+    if (!whs.length) {
+      el.innerHTML = '<div class="empty-note">No webhook attempts yet.</div>';
+      return;
+    }
+    const dotClass = s => s === 'success' ? 'tl-dot-success' : s === 'failed' ? 'tl-dot-failed' : 'tl-dot-pending';
+    el.innerHTML = `<div class="timeline" style="padding: 4px 0;">` + whs.map((w, i) => `
+      <div class="timeline-item">
+        <div class="tl-dot-wrap">
+          <div class="tl-dot ${dotClass(w.status)}"></div>
+          ${i < whs.length - 1 ? '<div class="tl-line"></div>' : ''}
+        </div>
+        <div class="tl-body">
+          <div class="tl-header">
+            <span class="tl-event">${w.event_type}</span>
+            <span class="tl-time">${fmtDate(w.created_at)}</span>
+          </div>
+          <div class="tl-detail">
+            <span class="badge badge-${w.status === 'success' ? 'success' : w.status === 'failed' ? 'destructive' : 'secondary'}" style="font-size:0.7rem">${w.status}</span>
+            · ${w.retry_count} retr${w.retry_count === 1 ? 'y' : 'ies'}
+            · <span class="address-mono" style="max-width:180px; font-size:0.75rem" title="${w.webhook_url}">${w.webhook_url}</span>
+          </div>
+          ${w.last_error ? `<div class="tl-error">✕ ${w.last_error}</div>` : ''}
+          ${w.next_retry_at ? `<div class="tl-detail" style="margin-top:2px">Next retry: ${fmtDate(w.next_retry_at)}</div>` : ''}
+        </div>
+      </div>
+    `).join('') + `</div>`;
+  }
+
+  function copyAddress() {
+    const addr = document.getElementById('fAddress').title;
+    navigator.clipboard.writeText(addr).then(() => showToast('Address copied'));
+  }
+
+  async function triggerScan() {
+    try {
+      const d = await api('POST', '/admin/scan-now');
+      showToast(d.message || 'Scan triggered');
+    } catch (e) {
+      showToast(e.message, 'error');
+    }
+  }
+
+  function openSweep() {
+    document.getElementById('sweepCard').style.display = 'block';
+  }
+  function closeSweep() {
+    document.getElementById('sweepCard').style.display = 'none';
+  }
+
+  async function sweepAddress() {
+    const chain = document.getElementById('sweepChain').value;
+    const resEl = document.getElementById('sweepResult');
+    try {
+      const d = await api('POST', '/admin/sweep-address', { address: paymentData.address, chain_name: chain });
+      resEl.textContent = d.message || 'Sweep queued';
+      resEl.style.display = 'block';
+      showToast(d.message || 'Sweep queued');
+    } catch (e) {
+      resEl.textContent = e.message;
+      resEl.style.display = 'block';
+      showToast(e.message, 'error');
+    }
+  }
+
+  async function sendWebhook() {
+    const event = document.getElementById('webhookEvent').value;
+    const resEl = document.getElementById('webhookResult');
+    try {
+      const d = await api('POST', `/admin/send-webhook?payment_id=${paymentData.id}&event_type=${event}`);
+      resEl.textContent = d.message || 'Webhook queued';
+      resEl.style.display = 'block';
+      showToast(d.message || 'Webhook queued');
+    } catch (e) {
+      resEl.textContent = e.message;
+      resEl.style.display = 'block';
+      showToast(e.message, 'error');
+    }
+  }
+
+  loadPayment();
+</script>
+{% endblock %}

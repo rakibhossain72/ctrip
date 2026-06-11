@@ -7,11 +7,10 @@ import datetime
 from typing import Optional
 
 from jose import JWTError, jwt
-from passlib.context import CryptContext
 
 from app.core.config import settings
 
-_pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+import bcrypt
 
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
@@ -19,11 +18,12 @@ REFRESH_TOKEN_EXPIRE_DAYS = 7
 
 
 def hash_password(plain: str) -> str:
-    return _pwd_context.hash(plain)
+    salt = bcrypt.gensalt()
+    return bcrypt.hashpw(plain.encode('utf-8'), salt).decode('utf-8')
 
 
 def verify_password(plain: str, hashed: str) -> bool:
-    return _pwd_context.verify(plain, hashed)
+    return bcrypt.checkpw(plain.encode('utf-8'), hashed.encode('utf-8'))
 
 
 def create_access_token(subject: str) -> str:

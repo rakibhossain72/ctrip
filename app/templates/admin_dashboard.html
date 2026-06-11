@@ -1,0 +1,910 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — Ctrip Admin{% endblock %}
+
+{% block head %}
+<style>
+  body { display: flex; height: 100vh; overflow: hidden; background: var(--muted); }
+
+  /* Sidebar */
+  .sidebar {
+    width: var(--sidebar-width);
+    background: var(--card);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+  }
+  .sidebar-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .sidebar-logo {
+    width: 32px; height: 32px;
+    background: var(--primary);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--primary-foreground);
+    font-weight: 700;
+    font-size: 0.875rem;
+    flex-shrink: 0;
+  }
+  .sidebar-title { font-weight: 600; font-size: 0.9375rem; }
+  .sidebar-subtitle { font-size: 0.75rem; color: var(--muted-foreground); }
+
+  .sidebar-nav { flex: 1; padding: 12px 8px; overflow-y: auto; }
+
+  .nav-section-label {
+    padding: 6px 12px 4px;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    color: var(--muted-foreground);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-top: 8px;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    border-radius: var(--radius);
+    cursor: pointer;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--muted-foreground);
+    border: none;
+    background: none;
+    width: 100%;
+    text-align: left;
+    transition: background 0.1s, color 0.1s;
+    text-decoration: none;
+    font-family: inherit;
+    margin-bottom: 2px;
+  }
+  .nav-item:hover { background: var(--accent); color: var(--foreground); }
+  .nav-item.active { background: var(--accent); color: var(--foreground); font-weight: 600; }
+  .nav-item .icon { font-size: 1rem; width: 20px; text-align: center; flex-shrink: 0; }
+
+  .sidebar-footer {
+    padding: 12px 8px;
+    border-top: 1px solid var(--border);
+  }
+
+  /* Main */
+  .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+  .topbar {
+    height: 57px;
+    background: var(--card);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+    flex-shrink: 0;
+  }
+  .topbar-title { font-weight: 600; font-size: 0.9375rem; }
+
+  .content { flex: 1; overflow-y: auto; padding: 24px; }
+
+  /* Sections */
+  .section { display: none; }
+  .section.active { display: block; }
+
+  /* Page header */
+  .page-header { margin-bottom: 24px; }
+  .page-header h1 { font-size: 1.25rem; }
+  .page-header p { font-size: 0.875rem; color: var(--muted-foreground); margin-top: 2px; }
+
+  /* Stat cards */
+  .stat-card {
+    padding: 20px 24px;
+  }
+  .stat-label {
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--muted-foreground);
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .stat-value { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; }
+  .stat-sub { font-size: 0.8125rem; color: var(--muted-foreground); margin-top: 4px; }
+
+  /* Recent payments table */
+  .status-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 6px;
+  }
+  .dot-pending { background: var(--warning); }
+  .dot-confirmed, .dot-settled, .dot-paid { background: var(--success); }
+  .dot-expired, .dot-failed { background: var(--destructive); }
+  .dot-detected { background: #3b82f6; }
+
+  /* Loading overlay */
+  .section-loader {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 64px;
+    gap: 10px;
+    color: var(--muted-foreground);
+    font-size: 0.875rem;
+  }
+
+  /* Copy key modal */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.4);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 1000;
+  }
+  .modal {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: calc(var(--radius) + 4px);
+    padding: 28px;
+    width: 100%;
+    max-width: 440px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+  }
+  .modal h3 { margin-bottom: 8px; }
+  .modal p { font-size: 0.875rem; margin-bottom: 16px; }
+  .key-display {
+    background: var(--muted);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px 14px;
+    font-family: monospace;
+    font-size: 0.8125rem;
+    word-break: break-all;
+    margin-bottom: 16px;
+    color: var(--foreground);
+  }
+  .modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
+
+  /* Webhook / ops result */
+  .result-box {
+    background: var(--muted);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px 14px;
+    font-family: monospace;
+    font-size: 0.8125rem;
+    margin-top: 12px;
+    display: none;
+    word-break: break-all;
+  }
+
+  /* Tabs inside a section */
+  .tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border); margin-bottom: 20px; }
+  .tab-btn {
+    padding: 8px 16px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--muted-foreground);
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    font-family: inherit;
+    transition: color 0.15s;
+    margin-bottom: -1px;
+  }
+  .tab-btn:hover { color: var(--foreground); }
+  .tab-btn.active { color: var(--foreground); border-bottom-color: var(--foreground); }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+</style>
+{% endblock %}
+
+{% block body %}
+<aside class="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-logo">C</div>
+    <div>
+      <div class="sidebar-title">Ctrip</div>
+      <div class="sidebar-subtitle">Admin Panel</div>
+    </div>
+  </div>
+
+  <nav class="sidebar-nav">
+    <div class="nav-section-label">Overview</div>
+    <button class="nav-item active" onclick="switchSection('overview', this)">
+      <span class="icon">◈</span> Dashboard
+    </button>
+    <button class="nav-item" onclick="switchSection('payments', this)">
+      <span class="icon">⟳</span> Payments
+    </button>
+    <button class="nav-item" onclick="switchSection('analytics', this)">
+      <span class="icon">▦</span> Analytics
+    </button>
+
+    <div class="nav-section-label">Management</div>
+    <button class="nav-item" onclick="switchSection('apikeys', this)">
+      <span class="icon">⚿</span> API Keys
+    </button>
+    <button class="nav-item" onclick="switchSection('operations', this)">
+      <span class="icon">⚙</span> Operations
+    </button>
+  </nav>
+
+  <div class="sidebar-footer">
+    <button class="nav-item btn-ghost" onclick="logout()" style="width:100%; color: var(--destructive);">
+      <span class="icon">⏻</span> Sign Out
+    </button>
+  </div>
+</aside>
+
+<div class="main">
+  <header class="topbar">
+    <span class="topbar-title" id="topbarTitle">Dashboard</span>
+    <div class="flex items-center gap-2">
+      <span class="text-sm text-muted" id="topbarUser"></span>
+    </div>
+  </header>
+
+  <div class="content">
+
+    <!-- OVERVIEW -->
+    <div id="overview" class="section active">
+      <div class="page-header">
+        <h1>Dashboard</h1>
+        <p>Your payment gateway at a glance.</p>
+      </div>
+
+      <div id="overviewLoader" class="section-loader">
+        <span class="spinner"></span> Loading summary…
+      </div>
+
+      <div id="overviewContent" style="display:none">
+        <div class="grid grid-4 mb-6" id="statCards"></div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px;">
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <div class="card-title">Webhook Health</div>
+                <div class="card-description">Delivery success rate</div>
+              </div>
+              <span id="webhookRateBadge" class="badge"></span>
+            </div>
+            <div class="card-content">
+              <div class="grid grid-3" id="webhookStats"></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <div class="card-title">Transactions</div>
+                <div class="card-description">On-chain status breakdown</div>
+              </div>
+            </div>
+            <div class="card-content">
+              <div class="grid grid-3" id="txStats"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Quick Actions</div>
+              <div class="card-description">Manually trigger background tasks</div>
+            </div>
+          </div>
+          <div class="card-content flex gap-3">
+            <button class="btn btn-secondary" onclick="triggerAction('/admin/scan-now', 'Scan triggered')">
+              ⟳ &nbsp;Trigger Payment Scan
+            </button>
+            <button class="btn btn-secondary" onclick="triggerAction('/admin/sweep-now', 'Sweep triggered')">
+              ↑ &nbsp;Trigger Global Sweep
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAYMENTS -->
+    <div id="payments" class="section">
+      <div class="page-header flex justify-between items-center">
+        <div>
+          <h1>Payments</h1>
+          <p>Recent payment requests across all chains.</p>
+        </div>
+        <div class="flex gap-2">
+          <select class="input" id="paymentStatusFilter" onchange="loadPayments()" style="width:140px">
+            <option value="">All statuses</option>
+            <option value="pending">Pending</option>
+            <option value="detected">Detected</option>
+            <option value="confirmed">Confirmed</option>
+            <option value="paid">Paid</option>
+            <option value="settled">Settled</option>
+            <option value="expired">Expired</option>
+            <option value="failed">Failed</option>
+          </select>
+          <button class="btn btn-outline" onclick="loadPayments()">↺ Refresh</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div id="paymentsLoader" class="section-loader">
+          <span class="spinner"></span> Loading payments…
+        </div>
+        <div id="paymentsTableWrap" class="table-wrapper" style="display:none">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Chain</th>
+                <th>Address</th>
+                <th>Amount (ETH)</th>
+                <th>Status</th>
+                <th>Confirmations</th>
+                <th>Created</th>
+                <th>Expires</th>
+              </tr>
+            </thead>
+            <tbody id="paymentsBody"></tbody>
+          </table>
+        </div>
+        <div id="paymentsEmpty" class="empty-state" style="display:none">
+          No payments found.
+        </div>
+      </div>
+    </div>
+
+    <!-- ANALYTICS -->
+    <div id="analytics" class="section">
+      <div class="page-header">
+        <h1>Analytics</h1>
+        <p>Payment volume and chain breakdown.</p>
+      </div>
+
+      <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('volTab', this)">Volume by Status</button>
+        <button class="tab-btn" onclick="switchTab('chainTab', this)">By Chain</button>
+        <button class="tab-btn" onclick="switchTab('dailyTab', this)">Daily Volume</button>
+      </div>
+
+      <div id="volTab" class="tab-panel active">
+        <div class="card">
+          <div id="volLoader" class="section-loader"><span class="spinner"></span> Loading…</div>
+          <div class="table-wrapper" id="volTableWrap" style="display:none">
+            <table>
+              <thead><tr><th>Status</th><th>Count</th></tr></thead>
+              <tbody id="volBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div id="chainTab" class="tab-panel">
+        <div class="card">
+          <div id="chainLoader" class="section-loader"><span class="spinner"></span> Loading…</div>
+          <div class="table-wrapper" id="chainTableWrap" style="display:none">
+            <table>
+              <thead><tr><th>Chain</th><th>Count</th><th>Volume (ETH)</th></tr></thead>
+              <tbody id="chainBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div id="dailyTab" class="tab-panel">
+        <div class="card">
+          <div class="card-header flex justify-between items-center">
+            <div class="card-title">Daily Volume</div>
+            <select class="input" id="dailyDays" onchange="loadDailyVolume()" style="width:120px">
+              <option value="7">Last 7 days</option>
+              <option value="30" selected>Last 30 days</option>
+              <option value="90">Last 90 days</option>
+            </select>
+          </div>
+          <div id="dailyLoader" class="section-loader"><span class="spinner"></span> Loading…</div>
+          <div class="table-wrapper" id="dailyTableWrap" style="display:none">
+            <table>
+              <thead><tr><th>Date</th><th>Count</th><th>Volume (ETH)</th></tr></thead>
+              <tbody id="dailyBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- API KEYS -->
+    <div id="apikeys" class="section">
+      <div class="page-header flex justify-between items-center">
+        <div>
+          <h1>API Keys</h1>
+          <p>Manage merchant API keys for payment creation.</p>
+        </div>
+        <button class="btn btn-primary" onclick="openCreateKeyModal()">+ Create Key</button>
+      </div>
+
+      <div class="card">
+        <div id="keysLoader" class="section-loader"><span class="spinner"></span> Loading…</div>
+        <div id="keysTableWrap" class="table-wrapper" style="display:none">
+          <table>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Prefix</th>
+                <th>Status</th>
+                <th>Created</th>
+                <th>Last Used</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="keysBody"></tbody>
+          </table>
+        </div>
+        <div id="keysEmpty" class="empty-state" style="display:none">No API keys found.</div>
+      </div>
+    </div>
+
+    <!-- OPERATIONS -->
+    <div id="operations" class="section">
+      <div class="page-header">
+        <h1>Operations</h1>
+        <p>Manual controls for payments, sweeps, and webhooks.</p>
+      </div>
+
+      <div class="grid grid-2">
+
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Sweep Address</div>
+              <div class="card-description">Manually sweep funds from a specific address.</div>
+            </div>
+          </div>
+          <div class="card-content">
+            <div class="form-group mb-4">
+              <label class="label">Address</label>
+              <input class="input" id="sweepAddress" placeholder="0x…" />
+            </div>
+            <div class="form-group mb-4">
+              <label class="label">Chain</label>
+              <input class="input" id="sweepChain" placeholder="ethereum" />
+            </div>
+            <button class="btn btn-primary" onclick="opSweepAddress()">Sweep</button>
+            <div class="result-box" id="sweepResult"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Process Payment</div>
+              <div class="card-description">Manually trigger processing for a payment ID.</div>
+            </div>
+          </div>
+          <div class="card-content">
+            <div class="form-group mb-4">
+              <label class="label">Payment ID</label>
+              <input class="input" type="number" id="processId" placeholder="1" />
+            </div>
+            <div class="form-group mb-4">
+              <label class="label">Chain</label>
+              <input class="input" id="processChain" placeholder="ethereum" />
+            </div>
+            <button class="btn btn-primary" onclick="opProcessPayment()">Process</button>
+            <div class="result-box" id="processResult"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Send Webhook</div>
+              <div class="card-description">Dispatch a webhook event for a payment.</div>
+            </div>
+          </div>
+          <div class="card-content">
+            <div class="form-group mb-4">
+              <label class="label">Payment ID</label>
+              <input class="input" type="number" id="webhookPid" placeholder="1" />
+            </div>
+            <div class="form-group mb-4">
+              <label class="label">Event Type</label>
+              <select class="input" id="webhookEvent">
+                <option value="payment.confirmed">payment.confirmed</option>
+                <option value="payment.expired">payment.expired</option>
+                <option value="payment.swept">payment.swept</option>
+              </select>
+            </div>
+            <button class="btn btn-primary" onclick="opSendWebhook()">Send</button>
+            <div class="result-box" id="webhookResult"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Custom Webhook</div>
+              <div class="card-description">Send a test webhook to any URL.</div>
+            </div>
+          </div>
+          <div class="card-content">
+            <div class="form-group mb-4">
+              <label class="label">Target URL</label>
+              <input class="input" id="cwUrl" placeholder="https://…" />
+            </div>
+            <div class="form-group mb-4">
+              <label class="label">Payload (JSON)</label>
+              <textarea class="textarea" id="cwPayload">{"test": true}</textarea>
+            </div>
+            <div class="form-group mb-4">
+              <label class="label">Secret (optional)</label>
+              <input class="input" id="cwSecret" placeholder="whsec_…" />
+            </div>
+            <button class="btn btn-primary" onclick="opCustomWebhook()">Send</button>
+            <div class="result-box" id="cwResult"></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Create API Key Modal -->
+<div id="createKeyModal" class="modal-overlay" style="display:none" onclick="closeModalOutside(event)">
+  <div class="modal">
+    <h3>Create API Key</h3>
+    <p>Give this key a name to identify it later.</p>
+    <div class="form-group mb-4">
+      <label class="label">Key Name</label>
+      <input class="input" id="newKeyName" placeholder="e.g. Production Key" autofocus />
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeCreateKeyModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="createApiKey()">Create</button>
+    </div>
+  </div>
+</div>
+
+<!-- Show Raw Key Modal -->
+<div id="rawKeyModal" class="modal-overlay" style="display:none">
+  <div class="modal">
+    <h3>API Key Created</h3>
+    <p>Copy this key now. It will <strong>not</strong> be shown again.</p>
+    <div class="key-display" id="rawKeyDisplay"></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="copyRawKey()">Copy Key</button>
+      <button class="btn btn-primary" onclick="closeRawKeyModal()">Done</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const token = localStorage.getItem('access_token');
+  if (!token) window.location.href = '/admin/login';
+
+  const sectionTitles = {
+    overview: 'Dashboard',
+    payments: 'Payments',
+    analytics: 'Analytics',
+    apikeys: 'API Keys',
+    operations: 'Operations',
+  };
+
+  function getHeaders() {
+    return { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
+  }
+
+  function logout() {
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
+    window.location.href = '/admin/login';
+  }
+
+  async function api(method, url, body) {
+    const opts = { method, headers: getHeaders() };
+    if (body) opts.body = JSON.stringify(body);
+    const res = await fetch(url, opts);
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.detail || `HTTP ${res.status}`);
+    return data;
+  }
+
+  function switchSection(id, btn) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    btn.classList.add('active');
+    document.getElementById('topbarTitle').textContent = sectionTitles[id] || id;
+    const loaders = { payments: loadPayments, apikeys: loadApiKeys, analytics: loadAnalytics, overview: loadOverview };
+    if (loaders[id]) loaders[id]();
+  }
+
+  function switchTab(id, btn) {
+    const section = btn.closest('.section');
+    section.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    section.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(id).classList.add('active');
+    const loaders = { volTab: loadVolume, chainTab: loadChain, dailyTab: loadDailyVolume };
+    if (loaders[id]) loaders[id]();
+  }
+
+  function statMini(label, value) {
+    return `<div><div class="stat-label">${label}</div><div style="font-size:1.25rem;font-weight:600">${value}</div></div>`;
+  }
+
+  async function loadOverview() {
+    document.getElementById('overviewLoader').style.display = 'flex';
+    document.getElementById('overviewContent').style.display = 'none';
+    try {
+      const d = await api('GET', '/admin/analytics/summary');
+
+      const cards = [
+        { label: 'Total Payments', value: d.payments.total_payments, sub: 'All time' },
+        { label: 'Total Volume', value: formatWei(d.payments.total_volume_wei), sub: 'All chains' },
+        { label: 'Confirmed Volume', value: formatWei(d.payments.confirmed_volume_wei), sub: 'Paid + Settled' },
+        { label: 'Active API Keys', value: d.api_keys.active_keys, sub: `of ${d.api_keys.total_keys} total` },
+      ];
+      document.getElementById('statCards').innerHTML = cards.map(c => `
+        <div class="card stat-card">
+          <div class="stat-label">${c.label}</div>
+          <div class="stat-value">${c.value}</div>
+          <div class="stat-sub">${c.sub}</div>
+        </div>
+      `).join('');
+
+      const wh = d.webhooks;
+      const whRate = wh.success_rate.toFixed(1);
+      document.getElementById('webhookRateBadge').textContent = `${whRate}% success`;
+      document.getElementById('webhookRateBadge').className = `badge ${wh.success_rate >= 90 ? 'badge-success' : wh.success_rate >= 60 ? 'badge-warning' : 'badge-destructive'}`;
+      document.getElementById('webhookStats').innerHTML = [
+        statMini('Total', wh.total_attempts),
+        statMini('Successful', wh.successful),
+        statMini('Failed', wh.failed),
+      ].join('');
+
+      const tx = d.transactions;
+      document.getElementById('txStats').innerHTML = [
+        statMini('Total', tx.total_transactions),
+        statMini('Confirmed', tx.confirmed),
+        statMini('Pending', tx.pending),
+      ].join('');
+
+      document.getElementById('overviewLoader').style.display = 'none';
+      document.getElementById('overviewContent').style.display = 'block';
+    } catch (e) {
+      document.getElementById('overviewLoader').innerHTML = `<span style="color:var(--destructive)">Failed to load: ${e.message}</span>`;
+    }
+  }
+
+  function formatWei(weiStr) { return weiStr; }
+
+  function statusBadge(s) {
+    const map = {
+      pending: 'badge-warning', detected: 'badge-outline', confirmed: 'badge-success',
+      paid: 'badge-success', settled: 'badge-success', expired: 'badge-destructive', failed: 'badge-destructive',
+    };
+    return `<span class="badge ${map[s] || 'badge-secondary'}">${s}</span>`;
+  }
+
+  async function loadPayments() {
+    const loader = document.getElementById('paymentsLoader');
+    const wrap = document.getElementById('paymentsTableWrap');
+    const empty = document.getElementById('paymentsEmpty');
+    loader.style.display = 'flex'; wrap.style.display = 'none'; empty.style.display = 'none';
+
+    const status = document.getElementById('paymentStatusFilter').value;
+    const url = `/admin/analytics/payments/recent?limit=50${status ? '&status=' + status : ''}`;
+    try {
+      const data = await api('GET', url);
+      loader.style.display = 'none';
+      if (!data.length) { empty.style.display = 'block'; return; }
+      document.getElementById('paymentsBody').innerHTML = data.map(p => `
+        <tr>
+          <td><a href="/admin/payments/${p.id}" class="font-mono" style="color:var(--foreground);text-decoration:underline;font-size:0.8125rem">${p.id.slice(0,8)}…</a></td>
+          <td><span class="badge badge-secondary">${p.chain}</span></td>
+          <td class="font-mono text-xs truncate" style="max-width:160px" title="${p.address}">${p.address.slice(0,12)}…</td>
+          <td class="font-mono">${p.amount_wei}</td>
+          <td>${statusBadge(p.status)}</td>
+          <td>${p.confirmations}</td>
+          <td class="text-xs text-muted">${new Date(p.created_at).toLocaleString()}</td>
+          <td class="text-xs text-muted">${new Date(p.expires_at).toLocaleString()}</td>
+        </tr>
+      `).join('');
+      wrap.style.display = 'block';
+    } catch (e) {
+      loader.innerHTML = `<span style="color:var(--destructive)">Failed: ${e.message}</span>`;
+    }
+  }
+
+  function loadAnalytics() {
+    loadVolume();
+  }
+
+  async function loadVolume() {
+    document.getElementById('volLoader').style.display = 'flex';
+    document.getElementById('volTableWrap').style.display = 'none';
+    try {
+      const d = await api('GET', '/admin/analytics/payments/volume');
+      document.getElementById('volBody').innerHTML = d.by_status.map(r =>
+        `<tr><td>${statusBadge(r.status)}</td><td class="font-semibold">${r.count}</td></tr>`
+      ).join('') || '<tr><td colspan="2" class="empty-state">No data</td></tr>';
+      document.getElementById('volLoader').style.display = 'none';
+      document.getElementById('volTableWrap').style.display = 'block';
+    } catch (e) {
+      document.getElementById('volLoader').innerHTML = `<span style="color:var(--destructive)">Failed: ${e.message}</span>`;
+    }
+  }
+
+  async function loadChain() {
+    document.getElementById('chainLoader').style.display = 'flex';
+    document.getElementById('chainTableWrap').style.display = 'none';
+    try {
+      const data = await api('GET', '/admin/analytics/payments/by-chain');
+      document.getElementById('chainBody').innerHTML = data.map(r =>
+        `<tr><td><span class="badge badge-secondary">${r.chain}</span></td><td>${r.count}</td><td class="font-mono">${r.volume_wei}</td></tr>`
+      ).join('') || '<tr><td colspan="3">No data</td></tr>';
+      document.getElementById('chainLoader').style.display = 'none';
+      document.getElementById('chainTableWrap').style.display = 'block';
+    } catch (e) {
+      document.getElementById('chainLoader').innerHTML = `<span style="color:var(--destructive)">Failed: ${e.message}</span>`;
+    }
+  }
+
+  async function loadDailyVolume() {
+    document.getElementById('dailyLoader').style.display = 'flex';
+    document.getElementById('dailyTableWrap').style.display = 'none';
+    const days = document.getElementById('dailyDays').value;
+    try {
+      const data = await api('GET', `/admin/analytics/payments/daily?days=${days}`);
+      document.getElementById('dailyBody').innerHTML = data.map(r =>
+        `<tr><td>${r.date}</td><td>${r.count}</td><td class="font-mono">${r.volume_wei}</td></tr>`
+      ).join('') || '<tr><td colspan="3">No data</td></tr>';
+      document.getElementById('dailyLoader').style.display = 'none';
+      document.getElementById('dailyTableWrap').style.display = 'block';
+    } catch (e) {
+      document.getElementById('dailyLoader').innerHTML = `<span style="color:var(--destructive)">Failed: ${e.message}</span>`;
+    }
+  }
+
+  async function loadApiKeys() {
+    document.getElementById('keysLoader').style.display = 'flex';
+    document.getElementById('keysTableWrap').style.display = 'none';
+    document.getElementById('keysEmpty').style.display = 'none';
+    try {
+      const data = await api('GET', '/admin/api-keys');
+      document.getElementById('keysLoader').style.display = 'none';
+      if (!data.length) { document.getElementById('keysEmpty').style.display = 'block'; return; }
+      document.getElementById('keysBody').innerHTML = data.map(k => `
+        <tr>
+          <td class="font-medium">${k.name}</td>
+          <td><code class="font-mono text-sm">${k.key_prefix}…</code></td>
+          <td>${k.is_active ? '<span class="badge badge-success">Active</span>' : '<span class="badge badge-destructive">Revoked</span>'}</td>
+          <td class="text-xs text-muted">${new Date(k.created_at).toLocaleString()}</td>
+          <td class="text-xs text-muted">${k.last_used_at ? new Date(k.last_used_at).toLocaleString() : '—'}</td>
+          <td>${k.is_active ? `<button class="btn btn-outline btn-sm" onclick="revokeKey('${k.id}', this)">Revoke</button>` : '—'}</td>
+        </tr>
+      `).join('');
+      document.getElementById('keysTableWrap').style.display = 'block';
+    } catch (e) {
+      document.getElementById('keysLoader').innerHTML = `<span style="color:var(--destructive)">Failed: ${e.message}</span>`;
+    }
+  }
+
+  function openCreateKeyModal() {
+    document.getElementById('createKeyModal').style.display = 'flex';
+    document.getElementById('newKeyName').focus();
+  }
+  function closeCreateKeyModal() {
+    document.getElementById('createKeyModal').style.display = 'none';
+    document.getElementById('newKeyName').value = '';
+  }
+  function closeModalOutside(e) {
+    if (e.target === e.currentTarget) closeCreateKeyModal();
+  }
+
+  async function createApiKey() {
+    const name = document.getElementById('newKeyName').value.trim();
+    if (!name) return showToast('Name is required', 'error');
+    try {
+      const data = await api('POST', '/admin/api-keys', { name });
+      closeCreateKeyModal();
+      document.getElementById('rawKeyDisplay').textContent = data.raw_key;
+      document.getElementById('rawKeyModal').style.display = 'flex';
+      loadApiKeys();
+    } catch (e) {
+      showToast(e.message, 'error');
+    }
+  }
+
+  function closeRawKeyModal() {
+    document.getElementById('rawKeyModal').style.display = 'none';
+  }
+
+  async function copyRawKey() {
+    const key = document.getElementById('rawKeyDisplay').textContent;
+    await navigator.clipboard.writeText(key);
+    showToast('Key copied to clipboard');
+  }
+
+  async function revokeKey(id, btn) {
+    if (!confirm('Revoke this API key? This cannot be undone.')) return;
+    try {
+      await fetch(`/admin/api-keys/${id}`, { method: 'DELETE', headers: getHeaders() });
+      showToast('Key revoked');
+      loadApiKeys();
+    } catch (e) {
+      showToast(e.message, 'error');
+    }
+  }
+
+  async function triggerAction(url, successMsg) {
+    try {
+      const data = await api('POST', url);
+      showToast(data.message || successMsg);
+    } catch (e) {
+      showToast(e.message, 'error');
+    }
+  }
+
+  async function opPost(url, body, resultId) {
+    const el = document.getElementById(resultId);
+    el.style.display = 'none';
+    try {
+      const data = await api('POST', url, body);
+      el.textContent = JSON.stringify(data, null, 2);
+      el.style.display = 'block';
+      showToast(data.message || 'Success');
+    } catch (e) {
+      el.textContent = 'Error: ' + e.message;
+      el.style.display = 'block';
+      showToast(e.message, 'error');
+    }
+  }
+
+  function opSweepAddress() {
+    opPost('/admin/sweep-address', {
+      address: document.getElementById('sweepAddress').value,
+      chain_name: document.getElementById('sweepChain').value,
+    }, 'sweepResult');
+  }
+
+  function opProcessPayment() {
+    opPost('/admin/process-payment', {
+      payment_id: parseInt(document.getElementById('processId').value),
+      chain_name: document.getElementById('processChain').value,
+    }, 'processResult');
+  }
+
+  function opSendWebhook() {
+    const pid = document.getElementById('webhookPid').value;
+    const ev = document.getElementById('webhookEvent').value;
+    opPost(`/admin/send-webhook?payment_id=${pid}&event_type=${ev}`, null, 'webhookResult');
+  }
+
+  function opCustomWebhook() {
+    let payload;
+    try { payload = JSON.parse(document.getElementById('cwPayload').value); }
+    catch { return showToast('Invalid JSON payload', 'error'); }
+    const secret = document.getElementById('cwSecret').value;
+    const body = { url: document.getElementById('cwUrl').value, payload };
+    if (secret) body.secret = secret;
+    opPost('/admin/custom-webhook', body, 'cwResult');
+  }
+
+  // Boot
+  loadOverview();
+</script>
+{% endblock %}
