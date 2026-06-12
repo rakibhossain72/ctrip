@@ -1,9 +1,13 @@
 from fastapi import APIRouter, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
 router = APIRouter(tags=["ui"])
 templates = Jinja2Templates(directory="app/templates")
+
+@router.get("/admin/")
+async def admin_redirect():
+    return RedirectResponse(url="/admin/dashboard")
 
 @router.get("/admin/login", response_class=HTMLResponse)
 async def admin_login(request: Request):

@@ -21,7 +21,11 @@ from pathlib import Path
 
 def run_alembic_command(args: list[str]) -> int:
     """Run an alembic command and return the exit code."""
-    cmd = ["alembic"] + args
+    import shutil
+    if shutil.which("uv"):
+        cmd = ["uv", "run", "alembic"] + args
+    else:
+        cmd = ["alembic"] + args
     print(f"Running: {' '.join(cmd)}")
     result = subprocess.run(cmd, cwd=Path(__file__).parent, check=False)
     return result.returncode

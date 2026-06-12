@@ -38,7 +38,7 @@ def _iso_date(dt: datetime.datetime) -> str:
 
 
 def _now_utc() -> datetime.datetime:
-    return datetime.datetime.now(datetime.timezone.utc)
+    return datetime.datetime.utcnow()
 
 def wei_to_eth_str(wei_val) -> str:
     if not wei_val:

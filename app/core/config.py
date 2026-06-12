@@ -7,7 +7,7 @@ from typing import List, Optional, Literal
 import yaml
 from eth_account import Account
 from pydantic import Field, SecretStr, field_validator, ConfigDict, computed_field
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -30,7 +30,7 @@ class Settings(BaseSettings):
     )
 
     database_url_dev: str = Field(
-        default=os.getenv("DATABASE_URL_DEV", "sqlite:////mnt/work/Projects/ctrip/dev_database.db"),
+        default=os.getenv("DATABASE_URL_DEV", "sqlite:////mnt/projects/ctrip/dev_database.db"),
         description="Development database URL"
     )
 
@@ -53,7 +53,13 @@ class Settings(BaseSettings):
         try:
             with open(self.chains_yaml_path, "r", encoding="utf-8") as f:
                 config = yaml.safe_load(f)
-                return config or []
+                chains_list = config or []
+                if os.path.exists("/.dockerenv"):
+                    for chain in chains_list:
+                        rpc_url = chain.get("rpc_url")
+                        if rpc_url:
+                            chain["rpc_url"] = rpc_url.replace("localhost", "host.docker.internal").replace("127.0.0.1", "host.docker.internal")
+                return chains_list
         except Exception as e:  # pylint: disable=broad-exception-caught
             print(f"Error loading chains.yaml: {e}")
             return []
@@ -118,7 +124,7 @@ class Settings(BaseSettings):
         return v
 
     # Pydantic V2 configuration
-    model_config = ConfigDict(
+    model_config = SettingsConfigDict(
         env_file=os.path.join(
             os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
             ".env"

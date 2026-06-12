@@ -46,7 +46,7 @@ class Payment(Base):
     detected_in_block = Column(Integer, nullable=True)
     expires_at = Column(DateTime, nullable=False)
     created_at = Column(
-        DateTime, default=datetime.datetime.now(datetime.timezone.utc), nullable=False
+        DateTime, default=datetime.datetime.utcnow, nullable=False
     )
 
     token = relationship("Token")
@@ -64,5 +64,5 @@ class HDWalletAddress(Base):
     index = Column(BigInteger, nullable=False)
     is_swapped = Column(String, default="false", nullable=False)
     created_at = Column(
-        DateTime, default=datetime.datetime.now(datetime.timezone.utc), nullable=False
+        DateTime, default=datetime.datetime.utcnow, nullable=False
     )

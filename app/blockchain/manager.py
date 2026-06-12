@@ -1,6 +1,7 @@
 """
 Manager for initializing and retrieving blockchain instances.
 """
+import os
 from typing import Dict
 from app.core.config import settings
 from app.blockchain.anvil import AnvilBlockchain
@@ -31,6 +32,7 @@ def get_blockchains() -> Dict[str, BlockchainBase]:
 
     # Fallback if config is empty
     if not blockchains:
-        blockchains["anvil"] = AnvilBlockchain(provider_url="http://localhost:8545")
+        fallback_url = "http://host.docker.internal:8545" if os.path.exists("/.dockerenv") else "http://localhost:8545"
+        blockchains["anvil"] = AnvilBlockchain(provider_url=fallback_url)
 
     return blockchains

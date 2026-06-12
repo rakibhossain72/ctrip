@@ -1,0 +1,37 @@
+# Git and GitHub
+.git
+.github
+.gitignore
+
+# Python files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.mypy_cache/
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+
+# IDEs and editors
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Project/Local Database & environment files
+.env
+*.db
+dump.rdb
+
+# Node/Frontend build files (if context is shared)
+node_modules/
+admin-frontend/node_modules/
+admin-frontend/dist/

@@ -15,6 +15,12 @@ from app.schemas.auth import LoginRequest, TokenResponse, RefreshRequest
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 
+@router.get("/", status_code=status.HTTP_200_OK)
+async def auth_root():
+    """Auth root endpoint to prevent 404s."""
+    return {"message": "Ctrip Authentication Service"}
+
+
 @router.post("/login", response_model=TokenResponse)
 async def login(body: LoginRequest, db: AsyncSession = Depends(get_async_db)):
     """Authenticate and receive access + refresh tokens."""
