@@ -16,6 +16,7 @@ from app.db.models.token import Token
 from app.schemas.payment import PaymentCreate, PaymentRead
 from app.api.dependencies import get_hdwallet, get_blockchains, require_api_key
 from app.utils.crypto import HDWalletManager
+from app.utils.helpers import now_utc
 
 router = APIRouter(prefix="/api/v1/payments", tags=["payments"])
 
@@ -71,7 +72,7 @@ async def create_payment(
         db.add(db_hd_address)
 
         # Real expiration logic (better to take from request if provided)
-        expires_at = datetime.now(timezone.utc) + timedelta(minutes=30)
+        expires_at = now_utc() + timedelta(minutes=30)
 
         db_payment = Payment(
             chain=payment_req.chain,

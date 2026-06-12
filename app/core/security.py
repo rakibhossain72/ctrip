@@ -12,6 +12,8 @@ from app.core.config import settings
 
 import bcrypt
 
+from app.utils.helpers import now_utc
+
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 REFRESH_TOKEN_EXPIRE_DAYS = 7
@@ -28,7 +30,7 @@ def verify_password(plain: str, hashed: str) -> bool:
 
 def create_access_token(subject: str) -> str:
     """Create a short-lived JWT access token (30 min)."""
-    expire = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(
+    expire = now_utc() + datetime.timedelta(
         minutes=ACCESS_TOKEN_EXPIRE_MINUTES
     )
     payload = {"sub": subject, "type": "access", "exp": expire}
@@ -37,7 +39,7 @@ def create_access_token(subject: str) -> str:
 
 def create_refresh_token(subject: str) -> str:
     """Create a long-lived JWT refresh token (7 days)."""
-    expire = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(
+    expire = now_utc() + datetime.timedelta(
         days=REFRESH_TOKEN_EXPIRE_DAYS
     )
     payload = {"sub": subject, "type": "refresh", "exp": expire}

@@ -74,7 +74,8 @@ async def require_api_key(key: str = Security(_api_key_scheme)) -> ApiKey:
         if not matched.is_active:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="API key has been revoked")
 
-        matched.last_used_at = datetime.datetime.now(datetime.timezone.utc)
+        from app.utils.helpers import now_utc
+        matched.last_used_at = now_utc()
         await session.commit()
 
         return matched

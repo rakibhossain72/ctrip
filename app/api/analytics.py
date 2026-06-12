@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import require_admin
 from app.db.async_session import get_async_db
+from app.utils.helpers import now_utc, wei_to_eth_str
 from app.db.models.payment import Payment, PaymentStatus
 from app.db.models.transaction import Transaction
 from app.db.models.webhook_attempt import WebhookAttempt
@@ -33,24 +34,6 @@ router = APIRouter(
 )
 
 
-def _iso_date(dt: datetime.datetime) -> str:
-    return dt.strftime("%Y-%m-%d")
-
-
-def _now_utc() -> datetime.datetime:
-    return datetime.datetime.utcnow()
-
-def wei_to_eth_str(wei_val) -> str:
-    if not wei_val:
-        return "0"
-    eth = float(wei_val) / 1e18
-    if eth < 0.000001:
-        return f"{eth:.4e}"
-    if eth < 1:
-        s = f"{eth:.8f}".rstrip("0").rstrip(".")
-        return s if s else "0"
-    s = f"{eth:.6f}".rstrip("0").rstrip(".")
-    return s if s else "0"
 
 
 @router.get("/summary", response_model=DashboardSummary)
@@ -120,7 +103,7 @@ async def dashboard_summary(db: AsyncSession = Depends(get_async_db)):
         select(
             func.count().label("total"),
             func.sum(case((ApiKey.is_active == True, 1), else_=0)).label("active"),
-            func.sum(case((ApiKey.last_used_at >= (_now_utc() - datetime.timedelta(hours=24)), 1), else_=0)).label("recent"),
+            func.sum(case((ApiKey.last_used_at >= (now_utc() - datetime.timedelta(hours=24)), 1), else_=0)).label("recent"),
         )
     )).one()
     total_keys = key_rows.total or 0
@@ -133,7 +116,7 @@ async def dashboard_summary(db: AsyncSession = Depends(get_async_db)):
     )
 
     return DashboardSummary(
-        generated_at=_now_utc(),
+        generated_at=now_utc(),
         payments=payments,
         transactions=transactions,
         webhooks=webhooks,
@@ -176,7 +159,7 @@ async def daily_payment_volume(
     db: AsyncSession = Depends(get_async_db),
 ):
     """Payment count and volume per day for the last N days."""
-    since = _now_utc() - datetime.timedelta(days=days)
+    since = now_utc() - datetime.timedelta(days=days)
     rows = (await db.execute(
         select(
             func.date(Payment.created_at).label("day"),
