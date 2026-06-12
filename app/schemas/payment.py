@@ -9,6 +9,7 @@ from pydantic import Field, field_validator
 
 from app.schemas.base import BaseSchema
 from app.db.models.payment import PaymentStatus
+from app.utils.helpers import wei_to_eth_str
 
 
 class PaymentBase(BaseSchema):
@@ -52,16 +53,7 @@ class PaymentRead(PaymentBase):
     @field_validator("amount", mode="before")
     @classmethod
     def amount_to_eth_str(cls, v):
-        if not v:
-            return "0"
-        eth = float(v) / 1e18
-        if eth < 0.000001:
-            return f"{eth:.4e}"
-        if eth < 1:
-            s = f"{eth:.8f}".rstrip("0").rstrip(".")
-            return s if s else "0"
-        s = f"{eth:.6f}".rstrip("0").rstrip(".")
-        return s if s else "0"
+        return wei_to_eth_str(v)
 
     # Optional: hide sensitive/internal fields
     # merchant_id is usually hidden from public API
