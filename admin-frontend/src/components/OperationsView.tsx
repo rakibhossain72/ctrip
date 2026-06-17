@@ -1,119 +1,123 @@
-import React, { useState } from 'react';
-import { Network, ArrowLeftRight, BellRing, Settings } from 'lucide-react';
-import { motion } from 'motion/react';
+import React, { useState } from "react";
+import { Network, ArrowLeftRight, BellRing, Settings } from "lucide-react";
+import { motion } from "motion/react";
 
 interface OperationsViewProps {
   key?: string;
-  triggerToast: (msg: string, type?: 'ok' | 'err') => void;
+  triggerToast: (msg: string, type?: "ok" | "err") => void;
 }
 
 export default function OperationsView({ triggerToast }: OperationsViewProps) {
   // Input states
-  const [procId, setProcId] = useState('');
-  const [procChain, setProcChain] = useState('bsc');
-  const [procResult, setProcResult] = useState<string>('');
+  const [procId, setProcId] = useState("");
+  const [procChain, setProcChain] = useState("bsc");
+  const [procResult, setProcResult] = useState<string>("");
   const [procLoading, setProcLoading] = useState(false);
 
-  const [sweepAddr, setSweepAddr] = useState('');
-  const [sweepChain, setSweepChain] = useState('bsc');
-  const [sweepResult, setSweepResult] = useState<string>('');
+  const [sweepAddr, setSweepAddr] = useState("");
+  const [sweepChain, setSweepChain] = useState("bsc");
+  const [sweepResult, setSweepResult] = useState<string>("");
   const [sweepLoading, setSweepLoading] = useState(false);
 
-  const [whId, setWhId] = useState('');
-  const [whEvent, setWhEvent] = useState('payment.confirmed');
-  const [whResult, setWhResult] = useState<string>('');
+  const [whId, setWhId] = useState("");
+  const [whEvent, setWhEvent] = useState("payment.confirmed");
+  const [whResult, setWhResult] = useState<string>("");
   const [whLoading, setWhLoading] = useState(false);
 
   // Handlers
   const handleProcess = (e: React.FormEvent) => {
     e.preventDefault();
     if (!procId.trim()) {
-      triggerToast('Please provide a Payment ID', 'err');
+      triggerToast("Please provide a Payment ID", "err");
       return;
     }
     setProcLoading(true);
-    setProcResult('Initiating process diagnostics...');
+    setProcResult("Initiating process diagnostics...");
 
     setTimeout(() => {
       setProcLoading(false);
       setProcResult(
         JSON.stringify(
           {
-            status: 'ok',
-            operation: 'PROCESS_PAYMENT_DIAGNOSTICS',
+            status: "ok",
+            operation: "PROCESS_PAYMENT_DIAGNOSTICS",
             payment_id: procId,
             chain: procChain.toUpperCase(),
             gas_used: `${Math.floor(Math.random() * 45000) + 21000} weis`,
             block_number: Math.floor(Math.random() * 10000000) + 5000000,
-            simulated_signatures: ['0x39aef...9a2e', '0x10bde...51da'],
+            simulated_signatures: ["0x39aef...9a2e", "0x10bde...51da"],
             timestamp: new Date().toISOString(),
           },
           null,
-          2
-        )
+          2,
+        ),
       );
-      triggerToast('Payment verification diagnostics processed successfully', 'ok');
+      triggerToast(
+        "Payment verification diagnostics processed successfully",
+        "ok",
+      );
     }, 750);
   };
 
   const handleSweep = (e: React.FormEvent) => {
     e.preventDefault();
     if (!sweepAddr.trim()) {
-      triggerToast('Please verify target Sweep Address', 'err');
+      triggerToast("Please verify target Sweep Address", "err");
       return;
     }
     setSweepLoading(true);
-    setSweepResult('Broadcasting sweep payload to validator pool...');
+    setSweepResult("Broadcasting sweep payload to validator pool...");
 
     setTimeout(() => {
       setSweepLoading(false);
       setSweepResult(
         JSON.stringify(
           {
-            status: 'ok',
-            operation: 'ASSET_SWEEP',
+            status: "ok",
+            operation: "ASSET_SWEEP",
             target_address: sweepAddr,
             network_chain: sweepChain.toUpperCase(),
             unlocked_balance_wei: `${Math.floor(Math.random() * 10000) + 1200} WEI`,
-            sweep_transaction_hash: `0x${Array.from({ length: 64 }, () =>
-              '0123456789abcdef'[Math.floor(Math.random() * 16)]
-            ).join('')}`,
-            gas_limit: '150000',
-            state: 'BROADCAST_SUCCESS',
+            sweep_transaction_hash: `0x${Array.from(
+              { length: 64 },
+              () => "0123456789abcdef"[Math.floor(Math.random() * 16)],
+            ).join("")}`,
+            gas_limit: "150000",
+            state: "BROADCAST_SUCCESS",
             timestamp: new Date().toISOString(),
           },
           null,
-          2
-        )
+          2,
+        ),
       );
-      triggerToast('Asset sweep broadcast complete', 'ok');
+      triggerToast("Asset sweep broadcast complete", "ok");
     }, 800);
   };
 
   const handleWebhook = (e: React.FormEvent) => {
     e.preventDefault();
     if (!whId.trim()) {
-      triggerToast('Webhook Event requires a Payment ID', 'err');
+      triggerToast("Webhook Event requires a Payment ID", "err");
       return;
     }
     setWhLoading(true);
-    setWhResult('Queueing webhook broadcast in active sidecar daemon...');
+    setWhResult("Queueing webhook broadcast in active sidecar daemon...");
 
     setTimeout(() => {
       setWhLoading(false);
       setWhResult(
         JSON.stringify(
           {
-            status: 'delivered',
+            status: "delivered",
             event: whEvent,
             destination_urls: [
-              'https://api.ctrip-travel.com/v1/payments/verify',
-              'https://admin.ctrip-internal.com/hooks/ledger',
+              "https://api.ctrip-travel.com/v1/payments/verify",
+              "https://admin.ctrip-internal.com/hooks/ledger",
             ],
             payload: {
               id: whId,
               event_type: whEvent,
-              triggered_by: 'CONSOLE_OPERATOR',
+              triggered_by: "CONSOLE_OPERATOR",
               timestamp: new Date().toISOString(),
               ledger_reference: `REF_${Math.floor(Math.random() * 899999) + 100000}`,
             },
@@ -122,10 +126,10 @@ export default function OperationsView({ triggerToast }: OperationsViewProps) {
             timestamp: new Date().toISOString(),
           },
           null,
-          2
-        )
+          2,
+        ),
       );
-      triggerToast('System Webhook dispatched successfully', 'ok');
+      triggerToast("System Webhook dispatched successfully", "ok");
     }, 650);
   };
 
@@ -139,7 +143,10 @@ export default function OperationsView({ triggerToast }: OperationsViewProps) {
     >
       <div>
         <h1 className="text-xl font-bold text-brand-text">Operations Panel</h1>
-        <p className="text-xs text-brand-muted">Trigger manual chain indexing, hotroom address sweeps, or mock webhooks.</p>
+        <p className="text-xs text-brand-muted">
+          Trigger manual chain indexing, hotroom address sweeps, or mock
+          webhooks.
+        </p>
       </div>
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
@@ -147,10 +154,15 @@ export default function OperationsView({ triggerToast }: OperationsViewProps) {
         <div className="rounded-xl border border-brand-border bg-brand-surface p-5 shadow-sm space-y-4">
           <div className="flex items-center gap-2 border-b border-brand-bg pb-3">
             <ArrowLeftRight className="h-4.5 w-4.5 text-zinc-950" />
-            <span className="text-sm font-semibold text-brand-text">Manually Process Signal</span>
+            <span className="text-sm font-semibold text-brand-text">
+              Manually Process Signal
+            </span>
           </div>
 
-          <form onSubmit={handleProcess} className="space-y-4 text-xs font-semibold">
+          <form
+            onSubmit={handleProcess}
+            className="space-y-4 text-xs font-semibold"
+          >
             <div>
               <label htmlFor="proc-id" className="block text-brand-text mb-1">
                 Payment UUID Sequence
@@ -166,7 +178,10 @@ export default function OperationsView({ triggerToast }: OperationsViewProps) {
             </div>
 
             <div>
-              <label htmlFor="proc-chain" className="block text-brand-text mb-1">
+              <label
+                htmlFor="proc-chain"
+                className="block text-brand-text mb-1"
+              >
                 Blockchain Target Network
               </label>
               <select
@@ -188,7 +203,7 @@ export default function OperationsView({ triggerToast }: OperationsViewProps) {
               disabled={procLoading}
               className="w-full rounded-lg bg-zinc-900 py-2 font-semibold text-white hover:opacity-90 transition-opacity active:scale-[0.98] disabled:opacity-50 cursor-pointer"
             >
-              {procLoading ? 'Processing...' : 'Simulate Handshake'}
+              {procLoading ? "Processing..." : "Simulate Handshake"}
             </button>
           </form>
 
@@ -208,12 +223,20 @@ export default function OperationsView({ triggerToast }: OperationsViewProps) {
         <div className="rounded-xl border border-brand-border bg-brand-surface p-5 shadow-sm space-y-4">
           <div className="flex items-center gap-2 border-b border-brand-bg pb-3">
             <Settings className="h-4.5 w-4.5 text-zinc-950" />
-            <span className="text-sm font-semibold text-brand-text">Active Chamber Sweep</span>
+            <span className="text-sm font-semibold text-brand-text">
+              Active Chamber Sweep
+            </span>
           </div>
 
-          <form onSubmit={handleSweep} className="space-y-4 text-xs font-semibold">
+          <form
+            onSubmit={handleSweep}
+            className="space-y-4 text-xs font-semibold"
+          >
             <div>
-              <label htmlFor="sweep-addr" className="block text-brand-text mb-1">
+              <label
+                htmlFor="sweep-addr"
+                className="block text-brand-text mb-1"
+              >
                 Vault Ethereum Address
               </label>
               <input
@@ -227,7 +250,10 @@ export default function OperationsView({ triggerToast }: OperationsViewProps) {
             </div>
 
             <div>
-              <label htmlFor="sweep-chain" className="block text-brand-text mb-1">
+              <label
+                htmlFor="sweep-chain"
+                className="block text-brand-text mb-1"
+              >
                 Relayer Target Chain
               </label>
               <select
@@ -249,7 +275,7 @@ export default function OperationsView({ triggerToast }: OperationsViewProps) {
               disabled={sweepLoading}
               className="w-full rounded-lg bg-zinc-900 py-2 font-semibold text-white hover:opacity-90 transition-opacity active:scale-[0.98] disabled:opacity-50 cursor-pointer"
             >
-              {sweepLoading ? 'Sweeping...' : 'Trigger Relayer Sweep'}
+              {sweepLoading ? "Sweeping..." : "Trigger Relayer Sweep"}
             </button>
           </form>
 
@@ -269,10 +295,15 @@ export default function OperationsView({ triggerToast }: OperationsViewProps) {
         <div className="rounded-xl border border-brand-border bg-brand-surface p-5 shadow-sm space-y-4">
           <div className="flex items-center gap-2 border-b border-brand-bg pb-3">
             <BellRing className="h-4.5 w-4.5 text-zinc-950" />
-            <span className="text-sm font-semibold text-brand-text">Simulated Webhook Pusher</span>
+            <span className="text-sm font-semibold text-brand-text">
+              Simulated Webhook Pusher
+            </span>
           </div>
 
-          <form onSubmit={handleWebhook} className="space-y-4 text-xs font-semibold">
+          <form
+            onSubmit={handleWebhook}
+            className="space-y-4 text-xs font-semibold"
+          >
             <div>
               <label htmlFor="wh-pid" className="block text-brand-text mb-1">
                 Associated Payment UUID
@@ -310,7 +341,7 @@ export default function OperationsView({ triggerToast }: OperationsViewProps) {
               disabled={whLoading}
               className="w-full rounded-lg bg-zinc-900 py-2 font-semibold text-white hover:opacity-90 transition-opacity active:scale-[0.98] disabled:opacity-50 cursor-pointer"
             >
-              {whLoading ? 'Dispatching...' : 'Dispatch Webhook Event'}
+              {whLoading ? "Dispatching..." : "Dispatch Webhook Event"}
             </button>
           </form>
 

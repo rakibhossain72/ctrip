@@ -1,7 +1,5 @@
-{% extends "base.html" %}
-{% block title %}Pay — Ctrip{% endblock %}
-
-{% block head %}
+{% extends "base.html" %} {% block title %}Pay — Ctrip{% endblock %} {% block
+head %}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
   body {
@@ -31,15 +29,21 @@
     margin-bottom: 4px;
   }
   .brand-mark {
-    width: 34px; height: 34px;
+    width: 34px;
+    height: 34px;
     background: var(--primary);
     border-radius: 8px;
-    display: flex; align-items: center; justify-content: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     color: var(--primary-foreground);
     font-weight: 700;
     font-size: 1rem;
   }
-  .brand-name { font-weight: 600; font-size: 1rem; }
+  .brand-name {
+    font-weight: 600;
+    font-size: 1rem;
+  }
 
   /* Step indicator */
   .steps {
@@ -58,9 +62,12 @@
     position: relative;
   }
   .step-dot {
-    width: 28px; height: 28px;
+    width: 28px;
+    height: 28px;
     border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     font-size: 0.75rem;
     font-weight: 600;
     background: var(--background);
@@ -83,86 +90,150 @@
     margin-bottom: 18px;
     transition: background 0.3s;
   }
-  .step.active .step-dot { border-color: var(--primary); color: var(--primary); background: var(--background); }
-  .step.active .step-label { color: var(--foreground); }
-  .step.done .step-dot { border-color: var(--primary); background: var(--primary); color: white; }
-  .step.done .step-label { color: var(--foreground); }
-  .step-line.done { background: var(--primary); }
-  .step.error .step-dot { border-color: var(--destructive); background: var(--destructive); color: white; }
-  .step.error .step-label { color: var(--destructive); }
+  .step.active .step-dot {
+    border-color: var(--primary);
+    color: var(--primary);
+    background: var(--background);
+  }
+  .step.active .step-label {
+    color: var(--foreground);
+  }
+  .step.done .step-dot {
+    border-color: var(--primary);
+    background: var(--primary);
+    color: white;
+  }
+  .step.done .step-label {
+    color: var(--foreground);
+  }
+  .step-line.done {
+    background: var(--primary);
+  }
+  .step.error .step-dot {
+    border-color: var(--destructive);
+    background: var(--destructive);
+    color: white;
+  }
+  .step.error .step-label {
+    color: var(--destructive);
+  }
 
   /* Card */
-  .pay-card { background: var(--card); border: 1px solid var(--border); border-radius: calc(var(--radius) + 4px); overflow: hidden; }
+  .pay-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: calc(var(--radius) + 4px);
+    overflow: hidden;
+  }
 
   /* Loading */
   .state-loading {
-    display: flex; flex-direction: column; align-items: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     padding: 56px 24px;
     gap: 14px;
   }
   .spin-ring {
-    width: 40px; height: 40px;
+    width: 40px;
+    height: 40px;
     border: 3px solid var(--border);
     border-top-color: var(--foreground);
     border-radius: 50%;
     animation: spin 0.75s linear infinite;
   }
-  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
 
   /* Error */
   .state-error {
-    display: flex; flex-direction: column; align-items: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     padding: 48px 24px;
     gap: 10px;
     text-align: center;
   }
   .state-error .icon-circle {
-    width: 52px; height: 52px;
+    width: 52px;
+    height: 52px;
     border-radius: 50%;
     background: #fee2e2;
-    display: flex; align-items: center; justify-content: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     font-size: 1.5rem;
     margin-bottom: 4px;
   }
 
   /* Success */
   .state-success {
-    display: flex; flex-direction: column; align-items: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     padding: 48px 24px;
     gap: 10px;
     text-align: center;
   }
   .state-success .icon-circle {
-    width: 60px; height: 60px;
+    width: 60px;
+    height: 60px;
     border-radius: 50%;
     background: #dcfce7;
-    display: flex; align-items: center; justify-content: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     font-size: 1.75rem;
     margin-bottom: 6px;
     animation: pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
-  @keyframes pop { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-  .state-success h2 { color: #166534; }
-  .state-success p { color: var(--muted-foreground); font-size: 0.875rem; }
+  @keyframes pop {
+    from {
+      transform: scale(0.5);
+      opacity: 0;
+    }
+    to {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+  .state-success h2 {
+    color: #166534;
+  }
+  .state-success p {
+    color: var(--muted-foreground);
+    font-size: 0.875rem;
+  }
 
   /* Expired */
   .state-expired {
-    display: flex; flex-direction: column; align-items: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     padding: 48px 24px;
     gap: 10px;
     text-align: center;
   }
   .state-expired .icon-circle {
-    width: 52px; height: 52px;
+    width: 52px;
+    height: 52px;
     border-radius: 50%;
     background: #fef9c3;
-    display: flex; align-items: center; justify-content: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     font-size: 1.5rem;
     margin-bottom: 4px;
   }
 
   /* Main payment UI */
-  .state-pending { display: flex; flex-direction: column; }
+  .state-pending {
+    display: flex;
+    flex-direction: column;
+  }
 
   /* Amount bar */
   .amount-bar {
@@ -174,13 +245,29 @@
     justify-content: space-between;
     gap: 12px;
   }
-  .amount-bar-left { display: flex; flex-direction: column; }
-  .amount-label-top { font-size: 0.75rem; opacity: 0.7; margin-bottom: 3px; }
-  .amount-big { font-size: 1.75rem; font-weight: 700; letter-spacing: -0.03em; line-height: 1; }
-  .amount-unit-top { font-size: 0.875rem; opacity: 0.75; margin-left: 4px; }
+  .amount-bar-left {
+    display: flex;
+    flex-direction: column;
+  }
+  .amount-label-top {
+    font-size: 0.75rem;
+    opacity: 0.7;
+    margin-bottom: 3px;
+  }
+  .amount-big {
+    font-size: 1.75rem;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1;
+  }
+  .amount-unit-top {
+    font-size: 0.875rem;
+    opacity: 0.75;
+    margin-left: 4px;
+  }
   .chain-pill {
-    background: rgba(255,255,255,0.15);
-    border: 1px solid rgba(255,255,255,0.2);
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 9999px;
     padding: 4px 12px;
     font-size: 0.8125rem;
@@ -201,10 +288,14 @@
   .countdown-bar-fill {
     height: 100%;
     background: var(--primary);
-    transition: width 1s linear, background 1s;
+    transition:
+      width 1s linear,
+      background 1s;
     width: 100%;
   }
-  .countdown-bar-fill.urgent { background: var(--destructive); }
+  .countdown-bar-fill.urgent {
+    background: var(--destructive);
+  }
   .countdown-text {
     display: flex;
     align-items: center;
@@ -212,12 +303,24 @@
     padding: 10px 20px;
     font-size: 0.8125rem;
   }
-  .countdown-label { color: var(--muted-foreground); }
-  .countdown-time { font-weight: 600; font-variant-numeric: tabular-nums; }
-  .countdown-time.urgent { color: var(--destructive); }
+  .countdown-label {
+    color: var(--muted-foreground);
+  }
+  .countdown-time {
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+  .countdown-time.urgent {
+    color: var(--destructive);
+  }
 
   /* Body */
-  .pay-body { padding: 20px 24px; display: flex; flex-direction: column; gap: 16px; }
+  .pay-body {
+    padding: 20px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
 
   /* QR */
   .qr-wrap {
@@ -234,11 +337,24 @@
     display: inline-flex;
     position: relative;
   }
-  .qr-hint { font-size: 0.8125rem; color: var(--muted-foreground); }
+  .qr-hint {
+    font-size: 0.8125rem;
+    color: var(--muted-foreground);
+  }
 
   /* Address */
-  .address-section { display: flex; flex-direction: column; }
-  .address-label { font-size: 0.75rem; font-weight: 500; color: var(--muted-foreground); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
+  .address-section {
+    display: flex;
+    flex-direction: column;
+  }
+  .address-label {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--muted-foreground);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 6px;
+  }
   .address-box {
     display: flex;
     align-items: center;
@@ -273,10 +389,16 @@
     color: var(--foreground);
     font-family: inherit;
     transition: background 0.15s;
-    display: flex; align-items: center; gap: 5px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
   }
-  .address-copy-btn:hover { background: var(--accent); }
-  .address-copy-btn.copied { color: #166534; }
+  .address-copy-btn:hover {
+    background: var(--accent);
+  }
+  .address-copy-btn.copied {
+    color: #166534;
+  }
 
   /* Status row */
   .status-row {
@@ -289,20 +411,43 @@
     border-radius: var(--radius);
     font-size: 0.875rem;
   }
-  .status-left { display: flex; align-items: center; gap: 8px; color: var(--muted-foreground); }
+  .status-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--muted-foreground);
+  }
   .status-dot {
-    width: 8px; height: 8px;
+    width: 8px;
+    height: 8px;
     border-radius: 50%;
     background: var(--warning);
   }
-  .status-dot.active { animation: blink 1.5s ease-in-out infinite; }
-  @keyframes blink {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.35; }
+  .status-dot.active {
+    animation: blink 1.5s ease-in-out infinite;
   }
-  .status-dot.confirmed { background: var(--success); animation: none; }
-  .status-dot.expired, .status-dot.failed { background: var(--destructive); animation: none; }
-  .status-text { font-weight: 500; color: var(--foreground); }
+  @keyframes blink {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.35;
+    }
+  }
+  .status-dot.confirmed {
+    background: var(--success);
+    animation: none;
+  }
+  .status-dot.expired,
+  .status-dot.failed {
+    background: var(--destructive);
+    animation: none;
+  }
+  .status-text {
+    font-weight: 500;
+    color: var(--foreground);
+  }
 
   /* Divider with label */
   .divider-label {
@@ -313,8 +458,9 @@
     color: var(--muted-foreground);
     font-weight: 500;
   }
-  .divider-label::before, .divider-label::after {
-    content: '';
+  .divider-label::before,
+  .divider-label::after {
+    content: "";
     flex: 1;
     height: 1px;
     background: var(--border);
@@ -335,19 +481,34 @@
     border-right: 1px solid var(--border);
     border-bottom: 1px solid var(--border);
   }
-  .detail-cell:nth-child(2n) { border-right: none; }
-  .detail-cell:nth-last-child(-n+2) { border-bottom: none; }
-  .detail-key { color: var(--muted-foreground); font-size: 0.75rem; margin-bottom: 3px; }
-  .detail-val { font-weight: 500; color: var(--foreground); word-break: break-all; }
+  .detail-cell:nth-child(2n) {
+    border-right: none;
+  }
+  .detail-cell:nth-last-child(-n + 2) {
+    border-bottom: none;
+  }
+  .detail-key {
+    color: var(--muted-foreground);
+    font-size: 0.75rem;
+    margin-bottom: 3px;
+  }
+  .detail-val {
+    font-weight: 500;
+    color: var(--foreground);
+    word-break: break-all;
+  }
 
   /* Footer note */
-  .pay-footer { text-align: center; font-size: 0.75rem; color: var(--muted-foreground); padding: 0 8px; line-height: 1.6; }
+  .pay-footer {
+    text-align: center;
+    font-size: 0.75rem;
+    color: var(--muted-foreground);
+    padding: 0 8px;
+    line-height: 1.6;
+  }
 </style>
-{% endblock %}
-
-{% block body %}
+{% endblock %} {% block body %}
 <div class="wrap">
-
   <div class="brand">
     <div class="brand-mark">C</div>
     <span class="brand-name">Ctrip</span>
@@ -378,38 +539,47 @@
 
   <!-- Card -->
   <div class="pay-card">
-
     <!-- Loading -->
     <div id="stateLoading" class="state-loading">
       <div class="spin-ring"></div>
-      <p style="font-size:0.875rem; color:var(--muted-foreground)">Loading payment…</p>
+      <p style="font-size: 0.875rem; color: var(--muted-foreground)">
+        Loading payment…
+      </p>
     </div>
 
     <!-- Error -->
-    <div id="stateError" class="state-error" style="display:none">
+    <div id="stateError" class="state-error" style="display: none">
       <div class="icon-circle">✕</div>
-      <h2 style="font-size:1.125rem">Not Found</h2>
+      <h2 style="font-size: 1.125rem">Not Found</h2>
       <p id="errMsg">This payment could not be loaded.</p>
     </div>
 
     <!-- Success -->
-    <div id="stateSuccess" class="state-success" style="display:none">
+    <div id="stateSuccess" class="state-success" style="display: none">
       <div class="icon-circle">✓</div>
       <h2>Payment Received</h2>
       <p>Your payment has been confirmed on-chain. Thank you.</p>
-      <div id="successDetail" style="margin-top:8px; font-size:0.8125rem; color:var(--muted-foreground);"></div>
+      <div
+        id="successDetail"
+        style="
+          margin-top: 8px;
+          font-size: 0.8125rem;
+          color: var(--muted-foreground);
+        "
+      ></div>
     </div>
 
     <!-- Expired -->
-    <div id="stateExpired" class="state-expired" style="display:none">
+    <div id="stateExpired" class="state-expired" style="display: none">
       <div class="icon-circle">⏱</div>
-      <h2 style="font-size:1.125rem">Payment Expired</h2>
-      <p style="font-size:0.875rem; color:var(--muted-foreground)">This payment window has closed. Please request a new payment link.</p>
+      <h2 style="font-size: 1.125rem">Payment Expired</h2>
+      <p style="font-size: 0.875rem; color: var(--muted-foreground)">
+        This payment window has closed. Please request a new payment link.
+      </p>
     </div>
 
     <!-- Active payment -->
-    <div id="statePending" class="state-pending" style="display:none">
-
+    <div id="statePending" class="state-pending" style="display: none">
       <!-- Amount bar -->
       <div class="amount-bar">
         <div class="amount-bar-left">
@@ -435,7 +605,6 @@
 
       <!-- Body -->
       <div class="pay-body">
-
         <!-- QR -->
         <div class="qr-wrap">
           <div class="qr-box">
@@ -451,7 +620,11 @@
           <div class="address-label">Send to</div>
           <div class="address-box">
             <span class="address-box-text" id="payAddress">—</span>
-            <button class="address-copy-btn" id="copyBtn" onclick="copyAddress()">
+            <button
+              class="address-copy-btn"
+              id="copyBtn"
+              onclick="copyAddress()"
+            >
               <span id="copyIcon">⎘</span> Copy
             </button>
           </div>
@@ -478,26 +651,27 @@
             <div class="detail-key">Network</div>
             <div class="detail-val" id="payChainDetail">—</div>
           </div>
-          <div class="detail-cell" style="grid-column: span 2;">
+          <div class="detail-cell" style="grid-column: span 2">
             <div class="detail-key">Payment ID</div>
-            <div class="detail-val" style="font-family:monospace; font-size:0.75rem;" id="payId">—</div>
+            <div
+              class="detail-val"
+              style="font-family: monospace; font-size: 0.75rem"
+              id="payId"
+            >
+              —
+            </div>
           </div>
         </div>
-
       </div>
     </div>
-
   </div>
 
   <p class="pay-footer">
-    Send the exact amount to the address above.<br>
+    Send the exact amount to the address above.<br />
     This page refreshes automatically every 10 seconds.
   </p>
-
 </div>
-{% endblock %}
-
-{% block scripts %}
+{% endblock %} {% block scripts %}
 <script>
   const paymentId = "{{ payment_id }}";
   let expiresAt = null;
@@ -507,26 +681,34 @@
   let qrRendered = false;
   let lastStatus = null;
 
-  const TERMINAL = ['confirmed', 'paid', 'settled', 'expired', 'failed'];
-  const SUCCESS   = ['confirmed', 'paid', 'settled'];
-  const EXPIRED   = ['expired', 'failed'];
+  const TERMINAL = ["confirmed", "paid", "settled", "expired", "failed"];
+  const SUCCESS = ["confirmed", "paid", "settled"];
+  const EXPIRED = ["expired", "failed"];
+
+  function parseApiDate(dateStr) {
+    if (!dateStr) return null;
+
+    const normalized = dateStr.replace(/\.(\d{3})\d+/, ".$1").replace(" ", "T");
+
+    return new Date(normalized + "Z");
+  }
 
   async function loadPayment() {
     try {
       const res = await fetch(`/api/v1/payments/${paymentId}`);
-      if (!res.ok) throw new Error('Payment not found or has been removed.');
+      if (!res.ok) throw new Error("Payment not found or has been removed.");
       const p = await res.json();
 
       // Normalise status — API returns enum value string
-      const status = (p.status?.value ?? p.status ?? '').toLowerCase();
+      const status = (p.status?.value ?? p.status ?? "").toLowerCase();
 
       if (lastStatus !== status) {
         lastStatus = status;
         renderPayment(p, status);
       } else {
         // just refresh live fields
-        document.getElementById('payConf').textContent = p.confirmations;
-        document.getElementById('payStatus').textContent = capitalize(status);
+        document.getElementById("payConf").textContent = p.confirmations;
+        document.getElementById("payStatus").textContent = capitalize(status);
       }
 
       if (!TERMINAL.includes(status)) {
@@ -534,55 +716,72 @@
         pollTimer = setTimeout(loadPayment, 10000);
       }
     } catch (e) {
-      showState('error');
-      document.getElementById('errMsg').textContent = e.message;
+      showState("error");
+      document.getElementById("errMsg").textContent = e.message;
     }
   }
 
   function renderPayment(p, status) {
-    const createdAt = new Date(p.created_at);
-    expiresAt = new Date(p.expires_at);
-    totalDuration = expiresAt - createdAt;
+    const createdAt = parseApiDate(p.created_at);
+    expiresAt = parseApiDate(p.expires_at);
+
+    if (!createdAt || !expiresAt || isNaN(expiresAt.getTime())) {
+      console.error("Invalid payment dates", p);
+      showState("error");
+      document.getElementById("errMsg").textContent =
+        "Invalid payment expiration date.";
+      return;
+    }
+
+    totalDuration = expiresAt.getTime() - createdAt.getTime();
 
     if (SUCCESS.includes(status)) {
       updateSteps(status);
-      showState('success');
-      document.getElementById('successDetail').textContent =
-        `${p.confirmations} confirmation${p.confirmations !== 1 ? 's' : ''} · ${p.chain.toUpperCase()}`;
+      showState("success");
+      document.getElementById("successDetail").textContent =
+        `${p.confirmations} confirmation${p.confirmations !== 1 ? "s" : ""} · ${p.chain.toUpperCase()}`;
       return;
     }
 
     if (EXPIRED.includes(status)) {
       updateSteps(status);
-      showState('expired');
+      showState("expired");
       return;
     }
 
     // Active
     updateSteps(status);
-    showState('pending');
+    showState("pending");
 
-    document.getElementById('payAmount').textContent = formatWei(p.amount);
-    const coinMap = { bsc: 'BNB', polygon: 'MATIC', base: 'ETH', avalanche: 'AVAX' };
-    const nativeSymbol = coinMap[p.chain.toLowerCase()] || 'ETH';
-    document.getElementById('payUnit').textContent = p.token_id ? 'tokens' : nativeSymbol;
-    document.getElementById('payChain').textContent = p.chain.toUpperCase();
-    document.getElementById('payChainDetail').textContent = p.chain.toUpperCase();
-    document.getElementById('payAddress').textContent = p.address;
-    document.getElementById('payStatus').textContent = capitalize(status);
-    document.getElementById('payConf').textContent = p.confirmations;
-    document.getElementById('payId').textContent = p.id;
+    document.getElementById("payAmount").textContent = formatWei(p.amount);
+    const coinMap = {
+      bsc: "BNB",
+      polygon: "MATIC",
+      base: "ETH",
+      avalanche: "AVAX",
+    };
+    const nativeSymbol = coinMap[p.chain.toLowerCase()] || "ETH";
+    document.getElementById("payUnit").textContent = p.token_id
+      ? "tokens"
+      : nativeSymbol;
+    document.getElementById("payChain").textContent = p.chain.toUpperCase();
+    document.getElementById("payChainDetail").textContent =
+      p.chain.toUpperCase();
+    document.getElementById("payAddress").textContent = p.address;
+    document.getElementById("payStatus").textContent = capitalize(status);
+    document.getElementById("payConf").textContent = p.confirmations;
+    document.getElementById("payId").textContent = p.id;
 
-    const dot = document.getElementById('statusDot');
-    dot.className = 'status-dot active';
+    const dot = document.getElementById("statusDot");
+    dot.className = "status-dot active";
 
     if (!qrRendered) {
-      new QRCode(document.getElementById('qrCode'), {
+      new QRCode(document.getElementById("qrCode"), {
         text: p.address,
         width: 192,
         height: 192,
-        colorDark: '#000000',
-        colorLight: '#ffffff',
+        colorDark: "#000000",
+        colorLight: "#ffffff",
         correctLevel: QRCode.CorrectLevel.H,
       });
       qrRendered = true;
@@ -592,13 +791,21 @@
   }
 
   function showState(s) {
-    document.getElementById('stateLoading').style.display = 'none';
-    document.getElementById('stateError').style.display   = 'none';
-    document.getElementById('stateSuccess').style.display = 'none';
-    document.getElementById('stateExpired').style.display = 'none';
-    document.getElementById('statePending').style.display = 'none';
-    const map = { loading: 'stateLoading', error: 'stateError', success: 'stateSuccess', expired: 'stateExpired', pending: 'statePending' };
-    if (map[s]) document.getElementById(map[s]).style.display = s === 'pending' ? 'flex' : 'flex';
+    document.getElementById("stateLoading").style.display = "none";
+    document.getElementById("stateError").style.display = "none";
+    document.getElementById("stateSuccess").style.display = "none";
+    document.getElementById("stateExpired").style.display = "none";
+    document.getElementById("statePending").style.display = "none";
+    const map = {
+      loading: "stateLoading",
+      error: "stateError",
+      success: "stateSuccess",
+      expired: "stateExpired",
+      pending: "statePending",
+    };
+    if (map[s])
+      document.getElementById(map[s]).style.display =
+        s === "pending" ? "flex" : "flex";
   }
 
   function updateSteps(status) {
@@ -609,15 +816,21 @@
 
     for (let i = 1; i <= 4; i++) {
       const step = document.getElementById(`step${i}`);
-      const dot  = document.getElementById(`dot${i}`);
-      step.className = 'step';
-      if (isError && i === 1) { step.classList.add('error'); dot.textContent = '✕'; }
-      else if (i < current)   { step.classList.add('done'); dot.textContent = '✓'; }
-      else if (i === current) { step.classList.add('active'); }
+      const dot = document.getElementById(`dot${i}`);
+      step.className = "step";
+      if (isError && i === 1) {
+        step.classList.add("error");
+        dot.textContent = "✕";
+      } else if (i < current) {
+        step.classList.add("done");
+        dot.textContent = "✓";
+      } else if (i === current) {
+        step.classList.add("active");
+      }
     }
     for (let i = 1; i <= 3; i++) {
       const line = document.getElementById(`line${i}`);
-      line.className = 'step-line' + (i < current ? ' done' : '');
+      line.className = "step-line" + (i < current ? " done" : "");
     }
   }
 
@@ -627,23 +840,28 @@
     countdownTimer = setInterval(tick, 1000);
   }
 
-  function formatWei(weiStr) { return weiStr; }
+  function formatWei(weiStr) {
+    return weiStr;
+  }
 
   function tick() {
     const remaining = Math.max(0, Math.floor((expiresAt - Date.now()) / 1000));
-    const elapsed   = Math.max(0, (Date.now() - (expiresAt - totalDuration)));
-    const pct       = Math.max(0, Math.min(100, 100 - (elapsed / totalDuration * 100)));
-    const urgent    = remaining < 120;
+    const elapsed = Math.max(0, Date.now() - (expiresAt - totalDuration));
+    const pct = Math.max(
+      0,
+      Math.min(100, 100 - (elapsed / totalDuration) * 100),
+    );
+    const urgent = remaining < 120;
 
-    const m = String(Math.floor(remaining / 60)).padStart(2, '0');
-    const s = String(remaining % 60).padStart(2, '0');
+    const m = String(Math.floor(remaining / 60)).padStart(2, "0");
+    const s = String(remaining % 60).padStart(2, "0");
 
-    const timeEl = document.getElementById('countdownTime');
-    const fillEl = document.getElementById('countdownFill');
+    const timeEl = document.getElementById("countdownTime");
+    const fillEl = document.getElementById("countdownFill");
     timeEl.textContent = `${m}:${s}`;
-    timeEl.className   = 'countdown-time' + (urgent ? ' urgent' : '');
-    fillEl.style.width  = pct + '%';
-    fillEl.className    = 'countdown-bar-fill' + (urgent ? ' urgent' : '');
+    timeEl.className = "countdown-time" + (urgent ? " urgent" : "");
+    fillEl.style.width = pct + "%";
+    fillEl.className = "countdown-bar-fill" + (urgent ? " urgent" : "");
 
     if (remaining === 0) {
       clearInterval(countdownTimer);
@@ -655,17 +873,17 @@
   }
 
   function copyAddress() {
-    const addr = document.getElementById('payAddress').textContent;
+    const addr = document.getElementById("payAddress").textContent;
     navigator.clipboard.writeText(addr).then(() => {
-      const btn  = document.getElementById('copyBtn');
-      const icon = document.getElementById('copyIcon');
-      btn.classList.add('copied');
-      icon.textContent = '✓';
-      btn.childNodes[1].textContent = ' Copied';
+      const btn = document.getElementById("copyBtn");
+      const icon = document.getElementById("copyIcon");
+      btn.classList.add("copied");
+      icon.textContent = "✓";
+      btn.childNodes[1].textContent = " Copied";
       setTimeout(() => {
-        btn.classList.remove('copied');
-        icon.textContent = '⎘';
-        btn.childNodes[1].textContent = ' Copy';
+        btn.classList.remove("copied");
+        icon.textContent = "⎘";
+        btn.childNodes[1].textContent = " Copy";
       }, 2000);
     });
   }

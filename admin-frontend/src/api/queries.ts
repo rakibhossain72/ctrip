@@ -1,21 +1,21 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { api, apiGet } from './client';
-import { Payment, ApiKey } from '../types';
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { api, apiGet } from "./client";
+import { Payment, ApiKey } from "../types";
 
 // Query Keys
 export const queryKeys = {
-  dashboard: ['dashboard'] as const,
-  payments: ['payments'] as const,
-  payment: (id: string) => ['payments', id] as const,
-  apiKeys: ['apiKeys'] as const,
-  analytics: ['analytics'] as const,
+  dashboard: ["dashboard"] as const,
+  payments: ["payments"] as const,
+  payment: (id: string) => ["payments", id] as const,
+  apiKeys: ["apiKeys"] as const,
+  analytics: ["analytics"] as const,
 };
 
 // Dashboard Summary - single endpoint for everything
 export function useDashboardSummary() {
   return useQuery({
     queryKey: queryKeys.dashboard,
-    queryFn: () => apiGet<DashboardSummary>('/admin/analytics/summary'),
+    queryFn: () => apiGet<DashboardSummary>("/admin/analytics/summary"),
     staleTime: 30000,
   });
 }
@@ -24,7 +24,8 @@ export function useDashboardSummary() {
 export function usePayments(filters?: { status?: string; limit?: number }) {
   return useQuery({
     queryKey: [...queryKeys.payments, filters],
-    queryFn: () => apiGet<Payment[]>('/admin/analytics/payments/recent', filters),
+    queryFn: () =>
+      apiGet<Payment[]>("/admin/analytics/payments/recent", filters),
     staleTime: 30000,
   });
 }
@@ -33,7 +34,8 @@ export function usePayments(filters?: { status?: string; limit?: number }) {
 export function usePayment(id: string) {
   return useQuery({
     queryKey: queryKeys.payment(id),
-    queryFn: () => apiGet<PaymentDetailResponse>(`/admin/analytics/payments/${id}`),
+    queryFn: () =>
+      apiGet<PaymentDetailResponse>(`/admin/analytics/payments/${id}`),
     enabled: !!id,
     staleTime: 10000,
   });
@@ -43,7 +45,7 @@ export function usePayment(id: string) {
 export function useApiKeys() {
   return useQuery({
     queryKey: queryKeys.apiKeys,
-    queryFn: () => apiGet<ApiKeyResponse[]>('/admin/api-keys'),
+    queryFn: () => apiGet<ApiKeyResponse[]>("/admin/api-keys"),
     staleTime: 60000,
   });
 }
@@ -51,8 +53,9 @@ export function useApiKeys() {
 // Payment Volume Stats
 export function usePaymentVolume() {
   return useQuery({
-    queryKey: [...queryKeys.analytics, 'volume'],
-    queryFn: () => apiGet<PaymentVolumeSummary>('/admin/analytics/payments/volume'),
+    queryKey: [...queryKeys.analytics, "volume"],
+    queryFn: () =>
+      apiGet<PaymentVolumeSummary>("/admin/analytics/payments/volume"),
     staleTime: 60000,
   });
 }
@@ -60,8 +63,9 @@ export function usePaymentVolume() {
 // Daily Volume
 export function useDailyVolume(days: number = 30) {
   return useQuery({
-    queryKey: [...queryKeys.analytics, 'daily', days],
-    queryFn: () => apiGet<DailyVolume[]>('/admin/analytics/payments/daily', { days }),
+    queryKey: [...queryKeys.analytics, "daily", days],
+    queryFn: () =>
+      apiGet<DailyVolume[]>("/admin/analytics/payments/daily", { days }),
     staleTime: 60000,
   });
 }
@@ -69,8 +73,9 @@ export function useDailyVolume(days: number = 30) {
 // Payments by Chain
 export function usePaymentsByChain() {
   return useQuery({
-    queryKey: [...queryKeys.analytics, 'byChain'],
-    queryFn: () => apiGet<ChainBreakdown[]>('/admin/analytics/payments/by-chain'),
+    queryKey: [...queryKeys.analytics, "byChain"],
+    queryFn: () =>
+      apiGet<ChainBreakdown[]>("/admin/analytics/payments/by-chain"),
     staleTime: 60000,
   });
 }
@@ -78,8 +83,8 @@ export function usePaymentsByChain() {
 // Webhook Stats
 export function useWebhookStats() {
   return useQuery({
-    queryKey: [...queryKeys.analytics, 'webhooks'],
-    queryFn: () => apiGet<WebhookStats>('/admin/analytics/webhooks'),
+    queryKey: [...queryKeys.analytics, "webhooks"],
+    queryFn: () => apiGet<WebhookStats>("/admin/analytics/webhooks"),
     staleTime: 60000,
   });
 }
@@ -87,8 +92,8 @@ export function useWebhookStats() {
 // Transaction Stats
 export function useTransactionStats() {
   return useQuery({
-    queryKey: [...queryKeys.analytics, 'transactions'],
-    queryFn: () => apiGet<TransactionStats>('/admin/analytics/transactions'),
+    queryKey: [...queryKeys.analytics, "transactions"],
+    queryFn: () => apiGet<TransactionStats>("/admin/analytics/transactions"),
     staleTime: 60000,
   });
 }

@@ -1,71 +1,77 @@
 services:
-  db:
-    image: postgres:15-alpine
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=payment_db
-    ports:
-      - "5432:5432"
+      db:
+            image: postgres:15-alpine
+            volumes:
+                  - postgres_data:/var/lib/postgresql/data
+            environment:
+                  POSTGRES_USER: postgres
+                  POSTGRES_PASSWORD: postgres
+                  POSTGRES_DB: payment_db
+            expose:
+                  - "5432"
 
-  redis:
-    image: redis:7-alpine
-    ports:
-      - "6379:6379"
+      redis:
+            image: redis:7-alpine
+            expose:
+                  - "6379"
 
-  app:
-    build: .
-    ports:
-      - "8000:8000"
-    volumes:
-      - .:/app
-    command: >
-      sh -c "python migrate.py upgrade &&
-             uvicorn server:app --host 0.0.0.0 --port 8000"
-    environment:
-      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/payment_db
-      - REDIS_URL=redis://redis:6379/0
-      - ENV=production
-      - RPC_URL=${RPC_URL:-http://host.docker.internal:8545}
-      - PRIVATE_KEY=${PRIVATE_KEY}
-      - MNEMONIC=${MNEMONIC:-test test test test test test test test test test test junk}
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    depends_on:
-      - db
-      - redis
+      app:
+            build: .
+            env_file: .env
+            command: sh -c "python migrate.py upgrade && uvicorn server:app --host 0.0.0.0 --port 8000"
+            environment:
+                  DATABASE_URL: postgresql+asyncpg://postgres:postgres@db:5432/payment_db
+                  DATABASE_URL_DEV: postgresql+asyncpg://postgres:postgres@db:5432/payment_db
+                  REDIS_URL: redis://redis:6379/0
+                  ENV: ${ENV:-development}
+                  RPC_URL: http://host.docker.internal:8545
+                  PRIVATE_KEY: ${PRIVATE_KEY}
+                  MNEMONIC: ${MNEMONIC:-test test test test test test test test test test test junk}
+            depends_on:
+                  - db
+                  - redis
+            expose:
+                  - "8000"
 
-  worker:
-    build: .
-    command: python run_worker.py
-    volumes:
-      - .:/app
-    environment:
-      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/payment_db
-      - REDIS_URL=redis://redis:6379/0
-      - ENV=production
-      - RPC_URL=${RPC_URL:-http://host.docker.internal:8545}
-      - PRIVATE_KEY=${PRIVATE_KEY}
-      - MNEMONIC=${MNEMONIC:-test test test test test test test test test test test junk}
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    depends_on:
-      - db
-      - redis
-    restart: unless-stopped
+      worker:
+            build: .
+            env_file: .env
+            command: python run_worker.py
+            environment:
+                  DATABASE_URL: postgresql+asyncpg://postgres:postgres@db:5432/payment_db
+                  DATABASE_URL_DEV: postgresql+asyncpg://postgres:postgres@db:5432/payment_db
+                  REDIS_URL: redis://redis:6379/0
+                  ENV: ${ENV:-development}
+                  RPC_URL: http://host.docker.internal:8545
+                  PRIVATE_KEY: ${PRIVATE_KEY}
+                  MNEMONIC: ${MNEMONIC:-test test test test test test test test test test test junk}
+            extra_hosts:
+                  - "host.docker.internal:host-gateway"
+            depends_on:
+                  - db
+                  - redis
+            restart: unless-stopped
 
-  admin-frontend:
-    build:
-      context: ./admin-frontend
-      dockerfile: Dockerfile
-    ports:
-      - "3000:80"
-    environment:
-      - VITE_API_URL=/
-    depends_on:
-      - app
+      frontend:
+            build: ./admin-frontend
+            env_file: .env
+            environment:
+                  VITE_API_URL: /api
+            command: sh -c "pnpm install && pnpm build"
+            volumes:
+                  - frontend_dist:/app/dist
+
+      nginx:
+            image: nginx:alpine
+            ports:
+                  - "80:80"
+            depends_on:
+                  - app
+                  - frontend
+            volumes:
+                  - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+                  - frontend_dist:/usr/share/nginx/html
 
 volumes:
-  postgres_data:
+      postgres_data:
+      frontend_dist:

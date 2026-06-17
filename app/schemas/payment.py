@@ -68,6 +68,10 @@ class PaymentResponse(BaseSchema):
     """Standard response wrapper for a single payment."""
     data: PaymentRead
 
+    model_config = {
+        "ser_json_timedelta": "iso8601"
+    }
+
 
 class PaymentListResponse(BaseSchema):
     """Standard response wrapper for a list of payments."""

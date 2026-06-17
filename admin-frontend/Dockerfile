@@ -10,14 +10,5 @@ COPY package.json pnpm-lock.yaml ./
 RUN pnpm install
 
 COPY . .
-ENV VITE_API_URL=/ 
+ENV VITE_API_URL=/api 
 RUN pnpm build
-
-# Production stage: serve built assets with nginx
-FROM nginx:stable-alpine
-
-COPY nginx.conf /etc/nginx/nginx.conf
-COPY --from=builder /app/dist /usr/share/nginx/html
-
-EXPOSE 80
-CMD ["nginx", "-g", "daemon off;"]
