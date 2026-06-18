@@ -21,6 +21,6 @@ class AdminUser(Base):
     is_active = Column(Boolean, default=True, nullable=False)
     created_at = Column(
         DateTime,
-        default=datetime.datetime.utcnow,
+        default=lambda: datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None),
         nullable=False,
     )

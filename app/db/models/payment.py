@@ -43,7 +43,9 @@ class Payment(Base):
     __tablename__ = "payments"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    token_contract_address = Column(String, nullable=True)  # ERC20 contract address; None = native token
+    token_contract_address = Column(
+        String, nullable=True
+    )  # ERC20 contract address; None = native token
     api_key_id = Column(UUID(as_uuid=True), ForeignKey("api_keys.id"), nullable=False)
     chain = Column(String, nullable=False)
     address = Column(String, nullable=False)
@@ -57,9 +59,11 @@ class Payment(Base):
     detected_in_block = Column(Integer, nullable=True)
     expires_at = Column(DateTime, nullable=False)
     created_at = Column(
-        DateTime, default=datetime.datetime.now(datetime.timezone.utc), nullable=False
+        DateTime,
+        default=lambda: datetime.datetime.now(datetime.timezone.utc).replace(
+            tzinfo=None
+        ),
+        nullable=False,
     )
 
     api_key = relationship("ApiKey")
-
-

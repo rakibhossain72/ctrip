@@ -31,6 +31,7 @@
 
 - name: anvil
   rpc_urls:
-    - ws://localhost:8545
+    # - ws://localhost:8545
+    - ws://host.docker.internal:8545
   chain_id: 31337
   poa: false

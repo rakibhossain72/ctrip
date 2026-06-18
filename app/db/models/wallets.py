@@ -17,5 +17,9 @@ class HDWalletAddress(Base):
     )  # no sequence
     address: Mapped[str] = mapped_column(unique=True, nullable=False)
     created_at: Mapped[datetime.datetime] = mapped_column(
-        DateTime, default=datetime.datetime.now(datetime.timezone.utc), nullable=False
+        DateTime,
+        default=lambda: datetime.datetime.now(datetime.timezone.utc).replace(
+            tzinfo=None
+        ),
+        nullable=False,
     )

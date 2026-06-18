@@ -1,5 +1,6 @@
 from typing import List
 from uuid import UUID
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -101,7 +102,7 @@ async def create_api_key(body: ApiKeyCreateRequest, db: AsyncSession = Depends(g
     """Generate a new API key. The raw key is returned only once."""
     raw_key, prefix, hashed_key = generate_api_key()
 
-    db_key = ApiKey(name=body.name, key_prefix=prefix, hashed_key=hashed_key)
+    db_key = ApiKey(name=body.name, key_prefix=prefix, hashed_key=hashed_key, created_at=datetime.now(timezone.utc).replace(tzinfo=None))
     db.add(db_key)
     await db.commit()
     await db.refresh(db_key)

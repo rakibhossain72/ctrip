@@ -48,12 +48,12 @@ class WebhookAttempt(Base):
     next_retry_at = Column(DateTime, nullable=True, index=True)
     created_at = Column(
         DateTime,
-        default=datetime.datetime.utcnow,
+        default=lambda: datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None),
         nullable=False,
     )
     updated_at = Column(
         DateTime,
-        default=datetime.datetime.utcnow,
-        onupdate=datetime.datetime.utcnow,
+        default=lambda: datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None),
+        onupdate=lambda: datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None),
         nullable=False,
     )
