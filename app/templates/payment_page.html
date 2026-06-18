@@ -761,7 +761,7 @@ head %}
       avalanche: "AVAX",
     };
     const nativeSymbol = coinMap[p.chain.toLowerCase()] || "ETH";
-    document.getElementById("payUnit").textContent = p.token_id
+    document.getElementById("payUnit").textContent = p.token_contract_address
       ? "tokens"
       : nativeSymbol;
     document.getElementById("payChain").textContent = p.chain.toUpperCase();

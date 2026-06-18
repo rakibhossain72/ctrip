@@ -93,7 +93,7 @@ class PaymentDetail(BaseModel):
     status: str
     confirmations: int
     detected_in_block: Optional[int]
-    token_id: Optional[str]
+    token_contract_address: Optional[str]
     created_at: str
     expires_at: str
     transactions: List[TransactionDetail]

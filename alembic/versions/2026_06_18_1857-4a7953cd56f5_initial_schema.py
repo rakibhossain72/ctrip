@@ -69,19 +69,6 @@ def upgrade() -> None:
     sa.UniqueConstraint('address'),
     sa.UniqueConstraint('index')
     )
-    op.create_table('tokens',
-    sa.Column('id', sa.UUID(), nullable=False),
-    sa.Column('chain', sa.String(), nullable=False),
-    sa.Column('address', sa.String(), nullable=True),
-    sa.Column('symbol', sa.String(), nullable=False),
-    sa.Column('decimals', sa.Integer(), nullable=False),
-    sa.Column('enabled', sa.Boolean(), nullable=True),
-    sa.PrimaryKeyConstraint('id')
-    )
-    with op.batch_alter_table('tokens', schema=None) as batch_op:
-        batch_op.create_index(batch_op.f('ix_tokens_address'), ['address'], unique=False)
-        batch_op.create_index(batch_op.f('ix_tokens_chain'), ['chain'], unique=False)
-
     op.create_table('webhook_attempts',
     sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('payment_id', sa.String(), nullable=False),
@@ -104,7 +91,7 @@ def upgrade() -> None:
 
     op.create_table('payments',
     sa.Column('id', sa.UUID(), nullable=False),
-    sa.Column('token_id', sa.UUID(), nullable=True),
+    sa.Column('token_contract_address', sa.String(), nullable=True),
     sa.Column('api_key_id', sa.UUID(), nullable=False),
     sa.Column('chain', sa.String(), nullable=False),
     sa.Column('address', sa.String(), nullable=False),
@@ -115,7 +102,6 @@ def upgrade() -> None:
     sa.Column('expires_at', sa.DateTime(), nullable=False),
     sa.Column('created_at', sa.DateTime(), nullable=False),
     sa.ForeignKeyConstraint(['api_key_id'], ['api_keys.id'], ),
-    sa.ForeignKeyConstraint(['token_id'], ['tokens.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_table('transactions',
@@ -147,11 +133,6 @@ def downgrade() -> None:
         batch_op.drop_index(batch_op.f('ix_webhook_attempts_next_retry_at'))
 
     op.drop_table('webhook_attempts')
-    with op.batch_alter_table('tokens', schema=None) as batch_op:
-        batch_op.drop_index(batch_op.f('ix_tokens_chain'))
-        batch_op.drop_index(batch_op.f('ix_tokens_address'))
-
-    op.drop_table('tokens')
     op.drop_table('hdwallet_addresses')
     with op.batch_alter_table('chain_states', schema=None) as batch_op:
         batch_op.drop_index(batch_op.f('ix_chain_states_id'))

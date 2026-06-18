@@ -15,7 +15,6 @@ from app.db.async_session import get_async_db
 from app.db.models.payment import Payment
 from app.db.models.wallets import HDWalletAddress
 from app.db.models.api_key import ApiKey
-from app.db.models.token import Token
 from app.schemas.payment import PaymentCreate, PaymentRead
 from app.api.dependencies import get_hdwallet, get_blockchains, require_api_key
 from app.utils.crypto import HDWalletManager
@@ -49,20 +48,6 @@ async def create_payment(
             detail=f"Unsupported chain: {payment_req.chain}",
         )
 
-    # Validate token if provided
-    if payment_req.token_id:
-        token_res = await db.execute(
-            select(Token).where(
-                Token.id == payment_req.token_id,
-                Token.chain == payment_req.chain,
-            )
-        )
-        if not token_res.scalars().first():
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail=f"Token {payment_req.token_id} not found for chain {payment_req.chain}",
-            )
-
     try:
         index_res = await db.execute(select(func.coalesce(func.max(HDWalletAddress.index), -1)))
         next_index = index_res.scalar() + 1
@@ -83,7 +68,7 @@ async def create_payment(
 
     db_payment = Payment(
         chain=payment_req.chain,
-        token_id=payment_req.token_id,
+        token_contract_address=payment_req.token_contract_address,
         address=address,
         amount=payment_req.amount,
         expires_at=expires_at,

@@ -229,7 +229,7 @@
               <span class="field-value" id="fBlock"></span>
             </div>
             <div class="field-row">
-              <span class="field-label">Token ID</span>
+              <span class="field-label">Token Contract</span>
               <span class="field-value font-mono text-sm" id="fToken"></span>
             </div>
             <div class="field-row">
@@ -352,7 +352,7 @@
       document.getElementById('fAmount').textContent = p.amount_wei;
       document.getElementById('fConf').textContent = p.confirmations;
       document.getElementById('fBlock').textContent = p.detected_in_block ?? '—';
-      document.getElementById('fToken').textContent = p.token_id ?? '—';
+      document.getElementById('fToken').textContent = p.token_contract_address ?? '—';
       document.getElementById('fCreated').textContent = fmtDate(p.created_at);
       document.getElementById('fExpires').textContent = fmtDate(p.expires_at);
 

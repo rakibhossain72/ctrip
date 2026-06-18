@@ -19,6 +19,7 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID
 from app.db.base import Base
 
+
 class PaymentStatus(enum.Enum):
     """
     Enum for payment statuses.
@@ -42,7 +43,7 @@ class Payment(Base):
     __tablename__ = "payments"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    token_id = Column(UUID(as_uuid=True), ForeignKey("tokens.id"), nullable=True)
+    token_contract_address = Column(String, nullable=True)  # ERC20 contract address; None = native token
     api_key_id = Column(UUID(as_uuid=True), ForeignKey("api_keys.id"), nullable=False)
     chain = Column(String, nullable=False)
     address = Column(String, nullable=False)
@@ -59,7 +60,6 @@ class Payment(Base):
         DateTime, default=datetime.datetime.now(datetime.timezone.utc), nullable=False
     )
 
-    token = relationship("Token")
     api_key = relationship("ApiKey")
 
 

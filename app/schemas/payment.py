@@ -18,7 +18,10 @@ class PaymentBase(BaseSchema):
         ..., min_length=3, max_length=20,
         description="Blockchain identifier e.g. ethereum, bsc, base"
     )
-    token_id: Optional[UUID] = Field(None, description="UUID of the token record")
+    token_contract_address: Optional[str] = Field(
+        None, max_length=120,
+        description="ERC20 token contract address; omit for native token payments"
+    )
     address: str = Field(..., min_length=30, max_length=120)
     amount: int = Field(..., gt=0, description="Amount in Wei (smallest unit, integer)")
     expires_at: datetime
@@ -28,7 +31,10 @@ class PaymentCreate(BaseSchema):
     """Schema for creating a new payment."""
     amount: int = Field(..., gt=0, description="Amount in Wei or token base unit")
     chain: str = Field(..., min_length=3, max_length=20, description="Blockchain identifier")
-    token_id: Optional[UUID] = Field(None, description="UUID of the token if ERC20")
+    token_contract_address: Optional[str] = Field(
+        None, max_length=120,
+        description="ERC20 token contract address; omit for native token payments"
+    )
 
 
 class PaymentCreateInternal(PaymentBase):

@@ -140,15 +140,15 @@ export function useCreatePayment() {
     mutationFn: async ({
       amount,
       chain,
-      token_id,
+      token_contract_address,
     }: {
       amount: number;
       chain: string;
-      token_id?: string;
+      token_contract_address?: string;
     }) => {
       return api<PaymentRead>('/api/v1/payments/', {
         method: 'POST',
-        body: { amount, chain, token_id },
+        body: { amount, chain, token_contract_address },
       });
     },
   });
@@ -180,5 +180,5 @@ interface PaymentRead {
   confirmations: number;
   created_at: string;
   expires_at: string;
-  token_id?: string | null;
+  token_contract_address?: string | null;
 }

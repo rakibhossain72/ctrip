@@ -19,7 +19,6 @@ from chain_sniper import ChainSniper
 from app.blockchain.w3 import get_w3
 from app.db.async_session import AsyncSessionLocal
 from app.db.models.payment import Payment, PaymentStatus
-from app.db.models.token import Token
 from app.services.webhook import WebhookService
 from app.core.config import settings
 
@@ -50,7 +49,7 @@ async def _dispatch_payment_webhook(payment: Payment) -> None:
         "address": payment.address,
         "amount": str(payment.amount),
         "chain": payment.chain,
-        "token_id": str(payment.token_id) if payment.token_id else None,
+        "token_contract_address": payment.token_contract_address,
         "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
     }
     await WebhookService.send_webhook(
@@ -147,7 +146,7 @@ class ScannerService:
                     and_(
                         Payment.status == PaymentStatus.PENDING,
                         Payment.chain == chain_name,
-                        Payment.token_id.is_(None),
+                        Payment.token_contract_address.is_(None),
                     )
                 )
             )
@@ -198,7 +197,7 @@ class ScannerService:
                         Payment.status == PaymentStatus.PENDING,
                         Payment.chain == chain_name,
                         Payment.address == to_address,
-                        Payment.token_id.isnot(None),
+                        Payment.token_contract_address.isnot(None),
                     )
                 )
             )
@@ -206,14 +205,7 @@ class ScannerService:
             if not payment:
                 return
 
-            token_res = await session.execute(
-                select(Token).where(Token.id == payment.token_id)
-            )
-            token = token_res.scalar_one_or_none()
-            if not token:
-                return
-
-            if log.get("address", "").lower() != token.address.lower():
+            if log.get("address", "").lower() != payment.token_contract_address.lower():
                 return
 
             raw_data = log.get("data", b"")
