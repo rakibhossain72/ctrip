@@ -30,12 +30,18 @@ ERC20_TRANSFER_TOPIC = (
 
 
 def _get_ws_url(chain_name: str) -> str | None:
-    """Return the WebSocket RPC URL for a chain from chains.yaml."""
+    """Return the first WebSocket RPC URL configured for a chain."""
     for chain in settings.chains:
-        if chain.get("name", "").lower() == chain_name.lower():
-            url = chain.get("rpc_url", "")
+        if chain.get("name", "").lower() != chain_name.lower():
+            continue
+        # rpc_urls list takes priority
+        for url in chain.get("rpc_urls") or []:
             if url.startswith("ws://") or url.startswith("wss://"):
                 return url
+        # fall back to single rpc_url
+        url = chain.get("rpc_url", "")
+        if url.startswith("ws://") or url.startswith("wss://"):
+            return url
     return None
 
 

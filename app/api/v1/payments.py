@@ -38,9 +38,6 @@ async def create_payment(
     """
     Create a new payment request and generate a unique receiving address.
     """
-    # Attach the API key ID to the payment for attribution
-    payment_req.api_key_id = api_key.id
-
     # Validate chain
     if payment_req.chain not in blockchains:
         raise HTTPException(
