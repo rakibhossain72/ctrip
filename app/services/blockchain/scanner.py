@@ -69,16 +69,12 @@ class ScannerService:
         self.session = session
         self.confirmations_required = confirmations_required
 
-    # ------------------------------------------------------------------
     # Webhook helper
-    # ------------------------------------------------------------------
 
     async def _dispatch_webhook(self, payment: Payment) -> None:
         await _dispatch_payment_webhook(payment)
 
-    # ------------------------------------------------------------------
     # Confirmation & expiry (still cron-driven — no change needed here)
-    # ------------------------------------------------------------------
 
     async def confirm_payments(self, chain_name: str) -> None:
         """Promote DETECTED payments to CONFIRMED once enough blocks have passed."""
@@ -129,9 +125,7 @@ class ScannerService:
         if expired:
             await self.session.commit()
 
-    # ------------------------------------------------------------------
     # Detection — chain-sniper WebSocket listeners
-    # ------------------------------------------------------------------
 
     @staticmethod
     async def _on_block(block: dict, chain_name: str) -> None:
@@ -150,7 +144,9 @@ class ScannerService:
                     )
                 )
             )
-            pending: Dict[str, Payment] = {p.address.lower(): p for p in result.scalars()}
+            pending: Dict[str, Payment] = {
+                p.address.lower(): p for p in result.scalars()
+            }
             if not pending:
                 return
 
@@ -168,7 +164,9 @@ class ScannerService:
                     block_number = block.get("number")
                     logger.info(
                         "[%s] Native payment detected in block %s — payment %s",
-                        chain_name, block_number, payment.id,
+                        chain_name,
+                        block_number,
+                        payment.id,
                     )
                     payment.status = PaymentStatus.DETECTED
                     payment.detected_in_block = block_number
@@ -216,7 +214,9 @@ class ScannerService:
             block_number = log.get("blockNumber")
             logger.info(
                 "[%s] ERC20 payment detected in block %s — payment %s",
-                chain_name, block_number, payment.id,
+                chain_name,
+                block_number,
+                payment.id,
             )
             payment.status = PaymentStatus.DETECTED
             payment.detected_in_block = block_number
@@ -233,13 +233,17 @@ class ScannerService:
             try:
                 await ScannerService._on_block(block, chain_name)
             except Exception as exc:  # pylint: disable=broad-exception-caught
-                logger.error("[%s] Block handler error: %s", chain_name, exc, exc_info=True)
+                logger.error(
+                    "[%s] Block handler error: %s", chain_name, exc, exc_info=True
+                )
 
         async def on_log(log: dict) -> None:
             try:
                 await ScannerService._on_log(log, chain_name)
             except Exception as exc:  # pylint: disable=broad-exception-caught
-                logger.error("[%s] Log handler error: %s", chain_name, exc, exc_info=True)
+                logger.error(
+                    "[%s] Log handler error: %s", chain_name, exc, exc_info=True
+                )
 
         async def on_error(exc: Exception) -> None:
             logger.error("[%s] ChainSniper error: %s", chain_name, exc, exc_info=True)

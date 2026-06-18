@@ -5,7 +5,7 @@ from typing import Dict
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.models import ChainState, AdminUser
-from app.blockchain.base import BlockchainBase
+from app.blockchain.client import EVMClient
 from app.core.config import settings
 from app.core.security import hash_password
 
@@ -26,7 +26,7 @@ async def seed_default_admin(db: AsyncSession):
     await db.commit()
 
 
-async def add_chain_states(db: AsyncSession, chains: Dict[str, BlockchainBase]):
+async def add_chain_states(db: AsyncSession, chains: Dict[str, EVMClient]):
     """
     Ensure all configured chains have a state record in the database.
     """

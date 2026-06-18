@@ -1,38 +1,55 @@
 """
-Manager for initializing and retrieving blockchain instances.
+Initializes EVMClient instances from chains.yaml configuration.
 """
+
+import logging
 import os
 from typing import Dict
+
 from app.core.config import settings
-from app.blockchain.anvil import AnvilBlockchain
-from app.blockchain.ethereum import EthereumBlockchain
-from app.blockchain.bsc import BSCBlockchain
-from app.blockchain.base import BlockchainBase
+from app.blockchain.client import EVMClient
+
+logger = logging.getLogger(__name__)
 
 
-def get_blockchains() -> Dict[str, BlockchainBase]:
+def get_blockchains() -> Dict[str, EVMClient]:
     """
-    Return a dictionary of configured blockchains.
+    Build an EVMClient for every chain defined in chains.yaml.
+
+    Each chain entry may include:
+      - name     (required) — used as the dict key
+      - rpc_url  (required) — HTTP or WebSocket RPC endpoint
+      - chain_id (optional) — override; auto-fetched from the node if omitted
+      - poa      (optional) — set true for PoA networks (BSC, Polygon, …)
     """
-    blockchains = {}
+    clients: Dict[str, EVMClient] = {}
+
     for chain_cfg in settings.chains:
-        name = (chain_cfg.get("name") or "").lower()
+        name = (chain_cfg.get("name") or "").lower().strip()
         rpc_url = chain_cfg.get("rpc_url")
-        if not rpc_url:
+
+        if not name or not rpc_url:
+            logger.warning(
+                "Skipping chain entry with missing name or rpc_url: %s", chain_cfg
+            )
             continue
 
-        if name == "ethereum":
-            blockchains[name] = EthereumBlockchain(provider_url=rpc_url)
-        elif name == "bsc":
-            blockchains[name] = BSCBlockchain(provider_url=rpc_url)
-        elif name == "anvil":
-            blockchains[name] = AnvilBlockchain(provider_url=rpc_url)
-        else:
-            blockchains[name] = BlockchainBase(provider_url=rpc_url)
+        clients[name] = EVMClient(
+            provider_url=rpc_url,
+            chain_id=chain_cfg.get("chain_id"),  # None → fetched lazily
+            poa=bool(chain_cfg.get("poa", False)),
+        )
+        logger.info("Registered chain '%s' → %s", name, rpc_url)
 
-    # Fallback if config is empty
-    if not blockchains:
-        fallback_url = "http://host.docker.internal:8545" if os.path.exists("/.dockerenv") else "http://localhost:8545"
-        blockchains["anvil"] = AnvilBlockchain(provider_url=fallback_url)
+    if not clients:
+        fallback_url = (
+            "http://host.docker.internal:8545"
+            if os.path.exists("/.dockerenv")
+            else "http://localhost:8545"
+        )
+        logger.warning(
+            "No chains configured — falling back to local node at %s", fallback_url
+        )
+        clients["anvil"] = EVMClient(provider_url=fallback_url, chain_id=31337)
 
-    return blockchains
+    return clients
