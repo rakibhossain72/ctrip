@@ -12,7 +12,8 @@ from sqlalchemy import select, func
 from sqlalchemy.exc import IntegrityError
 
 from app.db.async_session import get_async_db
-from app.db.models.payment import Payment, HDWalletAddress
+from app.db.models.payment import Payment
+from app.db.models.wallets import HDWalletAddress
 from app.db.models.api_key import ApiKey
 from app.db.models.token import Token
 from app.schemas.payment import PaymentCreate, PaymentRead

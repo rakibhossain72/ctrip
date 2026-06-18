@@ -14,19 +14,10 @@ from sqlalchemy import (
     Integer,
     DateTime,
     ForeignKey,
-    Sequence,
 )
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID
 from app.db.base import Base
-from app.db.engine import DATABASE_URL
-
-# PostgreSQL uses a named sequence for atomic, gap-free index assignment.
-# SQLite does not support sequences, so we skip it for local development.
-_IS_SQLITE = DATABASE_URL.startswith("sqlite")
-
-hd_index_seq = Sequence("hdwallet_index_seq", start=0, increment=1)
-
 
 class PaymentStatus(enum.Enum):
     """
@@ -72,14 +63,3 @@ class Payment(Base):
     api_key = relationship("ApiKey")
 
 
-# pylint: disable=too-few-public-methods
-class HDWalletAddress(Base):
-    __tablename__ = "hdwallet_addresses"
-
-    id: Mapped[int] = mapped_column(primary_key=True)
-    is_swapped: Mapped[bool] = mapped_column(default=False, nullable=False)
-    index: Mapped[int] = mapped_column(Integer, unique=True, nullable=False)  # no sequence
-    address: Mapped[str] = mapped_column(unique=True, nullable=False)
-    created_at = Column(
-        DateTime, default=datetime.datetime.now(datetime.timezone.utc), nullable=False
-    )
