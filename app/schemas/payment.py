@@ -46,6 +46,8 @@ class PaymentRead(PaymentBase):
     id: UUID
     status: PaymentStatus
     confirmations: int
+    api_key_id: Optional[UUID] = Field(None, description="API key that created this payment")
+    api_key_name: Optional[str] = Field(None, description="Name of the API key (for attribution)")  # optional for read models
     created_at: datetime
     expires_at: datetime
     amount: str

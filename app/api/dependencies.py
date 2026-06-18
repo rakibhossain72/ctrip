@@ -11,6 +11,7 @@ from app.core.security import decode_token, verify_api_key
 from app.db.models.api_key import ApiKey
 from app.db.async_session import get_async_db
 from app.utils.crypto import HDWalletManager
+from app.utils.helpers import now_utc
 
 _oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login", auto_error=False)
 _api_key_scheme = APIKeyHeader(name="X-Api-Key", auto_error=False)
@@ -74,7 +75,6 @@ async def require_api_key(key: str = Security(_api_key_scheme)) -> ApiKey:
         if not matched.is_active:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="API key has been revoked")
 
-        from app.utils.helpers import now_utc
         matched.last_used_at = now_utc()
         await session.commit()
 
