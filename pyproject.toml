@@ -29,6 +29,8 @@ dependencies = [
     "requests>=2.32.5",
     "httpx>=0.28.1",
     "slowapi>=0.1.9",
+    "chain-sniper==0.1.2",
+    "arq>=0.25.0",
 ]
 
 [project.optional-dependencies]

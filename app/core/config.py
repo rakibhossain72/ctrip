@@ -6,7 +6,7 @@ from typing import List, Optional, Literal
 
 import yaml
 from eth_account import Account
-from pydantic import Field, SecretStr, field_validator, ConfigDict, computed_field
+from pydantic import Field, SecretStr, field_validator, computed_field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -88,6 +88,20 @@ class Settings(BaseSettings):
     secret_key: SecretStr = Field(
         default="your-secret-key-change-in-production",
         description="Application secret for cryptography"
+    )
+
+    wallet_secret_a: SecretStr = Field(
+        ...,
+        description="For generating payment address"
+    )
+    wallet_secret_b: SecretStr = Field(
+        ...,
+        description="For generating payment address"
+    )
+
+    payment_expiry_minutes: int = Field(
+        default=30,
+        description="Time to expire payments (minute)"
     )
 
     @computed_field

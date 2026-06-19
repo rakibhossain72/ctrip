@@ -1,6 +1,7 @@
 """
 Main entry point for the FastAPI application.
 """
+
 from contextlib import asynccontextmanager
 from typing import AsyncIterator
 
@@ -13,13 +14,12 @@ from app.api.analytics import router as analytics_router
 from app.api.auth import router as auth_router
 from app.api.ui import router as ui_router
 
-from app.utils.crypto import HDWalletManager
+from app.wallet import WalletKeyManager
 from app.blockchain.manager import get_blockchains
 from app.db.async_session import AsyncSessionLocal
 from app.db.seed import add_chain_states, seed_default_admin
 from app.core.config import settings
 from fastapi.middleware.cors import CORSMiddleware
-
 
 
 @asynccontextmanager
@@ -30,8 +30,11 @@ async def lifespan(fastapi_app: FastAPI) -> AsyncIterator[None]:
     # Startup
     fastapi_app.state.blockchains = get_blockchains()
 
-    hdwallet = HDWalletManager(mnemonic_phrase=settings.mnemonic)
-    fastapi_app.state.hdwallet = hdwallet
+    wallet_manager = WalletKeyManager(
+        server_secret_a=settings.wallet_secret_a,
+        server_secret_b=settings.wallet_secret_b,
+    )
+    fastapi_app.state.wallet_manager = wallet_manager
 
     # NOTE: Table creation now handled by Alembic migrations
     # Use: python migrate.py upgrade
@@ -69,6 +72,7 @@ app.include_router(payments_router)
 app.include_router(admin_router)
 app.include_router(analytics_router)
 app.include_router(ui_router)
+
 
 @app.get("/")
 def read_root():

@@ -10,7 +10,7 @@ from sqlalchemy import select
 from app.core.security import decode_token, verify_api_key
 from app.db.models.api_key import ApiKey
 from app.db.async_session import get_async_db
-from app.utils.crypto import HDWalletManager
+from app.wallet import WalletKeyManager
 from app.utils.helpers import now_utc
 
 _oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login", auto_error=False)
@@ -22,9 +22,9 @@ def get_blockchains(request: Request):
     return request.app.state.blockchains  # pylint: disable=no-member
 
 
-def get_hdwallet(request: Request) -> HDWalletManager:
-    """Dependency to access the HD wallet manager from app state."""
-    return request.app.state.hdwallet  # pylint: disable=no-member
+def get_wallet_manager(request: Request) -> WalletKeyManager:
+    """Dependency to generate and access the payment wallet manager from app state."""
+    return request.app.state.wallet_manager
 
 
 async def require_admin(token: str = Security(_oauth2_scheme)) -> str:
