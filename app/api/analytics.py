@@ -273,9 +273,17 @@ async def get_payment_detail(payment_id: UUID, db: AsyncSession = Depends(get_as
         .order_by(WebhookAttempt.created_at.desc())
     )).scalars().all()
 
+    
+    api_key_name = (await db.execute(
+        select(ApiKey.name).where(ApiKey.id == payment.api_key_id)
+    )).scalar()
+
+    print(f"API Key Name: {api_key_name}")  # Debugging line to check the value of api_key_name
+
     return PaymentDetail(
         id=str(payment.id),
         chain=payment.chain,
+        api_key_name=api_key_name,
         address=payment.address,
         amount_wei=wei_to_eth_str(payment.amount),
         status=payment.status.value,

@@ -179,6 +179,7 @@ interface PaymentDetailResponse {
   id: string;
   chain: string;
   address: string;
+  api_key_name: string;
   amount_wei: string;
   status: string;
   confirmations: number;

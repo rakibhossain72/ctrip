@@ -285,6 +285,13 @@ export default function PaymentDetailView({
                   {payment.chain}
                 </span>
               </div>
+              {/* created api */}
+              <div className="flex justify-between items-center py-3 gap-4">
+                <span className="text-brand-muted font-medium">Created</span>
+                <span className="font-mono text-brand-text font-semibold">
+                  {payment.api_key_name}
+                </span>
+              </div>
               <div className="flex justify-between items-center py-3 gap-4">
                 <span className="text-brand-muted font-medium">
                   Deposit Address

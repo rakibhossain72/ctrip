@@ -88,6 +88,7 @@ class WebhookAttemptDetail(BaseModel):
 class PaymentDetail(BaseModel):
     id: str
     chain: str
+    api_key_name: str
     address: str
     amount_wei: str
     status: str
