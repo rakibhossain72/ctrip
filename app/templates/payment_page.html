@@ -514,7 +514,6 @@ head %}
     <span class="brand-name">Ctrip</span>
   </div>
 
-  <!-- Step indicator -->
   <div class="steps" id="steps">
     <div class="step active" id="step1">
       <div class="step-dot" id="dot1">1</div>
@@ -537,9 +536,7 @@ head %}
     </div>
   </div>
 
-  <!-- Card -->
   <div class="pay-card">
-    <!-- Loading -->
     <div id="stateLoading" class="state-loading">
       <div class="spin-ring"></div>
       <p style="font-size: 0.875rem; color: var(--muted-foreground)">
@@ -547,14 +544,12 @@ head %}
       </p>
     </div>
 
-    <!-- Error -->
     <div id="stateError" class="state-error" style="display: none">
       <div class="icon-circle">✕</div>
       <h2 style="font-size: 1.125rem">Not Found</h2>
       <p id="errMsg">This payment could not be loaded.</p>
     </div>
 
-    <!-- Success -->
     <div id="stateSuccess" class="state-success" style="display: none">
       <div class="icon-circle">✓</div>
       <h2>Payment Received</h2>
@@ -569,7 +564,6 @@ head %}
       ></div>
     </div>
 
-    <!-- Expired -->
     <div id="stateExpired" class="state-expired" style="display: none">
       <div class="icon-circle">⏱</div>
       <h2 style="font-size: 1.125rem">Payment Expired</h2>
@@ -578,9 +572,7 @@ head %}
       </p>
     </div>
 
-    <!-- Active payment -->
     <div id="statePending" class="state-pending" style="display: none">
-      <!-- Amount bar -->
       <div class="amount-bar">
         <div class="amount-bar-left">
           <div class="amount-label-top">Amount due</div>
@@ -592,7 +584,6 @@ head %}
         <span class="chain-pill" id="payChain">—</span>
       </div>
 
-      <!-- Countdown -->
       <div class="countdown-wrap" id="countdownWrap">
         <div class="countdown-bar-track">
           <div class="countdown-bar-fill" id="countdownFill"></div>
@@ -603,9 +594,7 @@ head %}
         </div>
       </div>
 
-      <!-- Body -->
       <div class="pay-body">
-        <!-- QR -->
         <div class="qr-wrap">
           <div class="qr-box">
             <div id="qrCode"></div>
@@ -615,7 +604,6 @@ head %}
 
         <div class="divider-label">or copy address</div>
 
-        <!-- Address -->
         <div class="address-section">
           <div class="address-label">Send to</div>
           <div class="address-box">
@@ -630,7 +618,6 @@ head %}
           </div>
         </div>
 
-        <!-- Status -->
         <div class="status-row">
           <div class="status-left">
             <div class="status-dot active" id="statusDot"></div>
@@ -641,7 +628,6 @@ head %}
 
         <div class="divider-label">details</div>
 
-        <!-- Details grid -->
         <div class="details-grid">
           <div class="detail-cell">
             <div class="detail-key">Confirmations</div>
@@ -673,13 +659,14 @@ head %}
 </div>
 {% endblock %} {% block scripts %}
 <script>
-  const paymentId = "{{ payment_id }}";
+  // Directly inject the payment object safe-coded as JSON
+  const paymentData = {{ payment | tojson }};
+  
   let expiresAt = null;
   let totalDuration = null;
   let countdownTimer = null;
-  let pollTimer = null;
+  let refreshTimer = null;
   let qrRendered = false;
-  let lastStatus = null;
 
   const TERMINAL = ["confirmed", "paid", "settled", "expired", "failed"];
   const SUCCESS = ["confirmed", "paid", "settled"];
@@ -687,49 +674,25 @@ head %}
 
   function parseApiDate(dateStr) {
     if (!dateStr) return null;
-
     const normalized = dateStr.replace(/\.(\d{3})\d+/, ".$1").replace(" ", "T");
-
     return new Date(normalized + "Z");
   }
 
-  async function loadPayment() {
-    try {
-      const res = await fetch(`/api/v1/payments/${paymentId}`);
-      if (!res.ok) throw new Error("Payment not found or has been removed.");
-      const p = await res.json();
-
-      // Normalise status — API returns enum value string
-      const status = (p.status?.value ?? p.status ?? "").toLowerCase();
-
-      if (lastStatus !== status) {
-        lastStatus = status;
-        renderPayment(p, status);
-      } else {
-        // just refresh live fields
-        document.getElementById("payConf").textContent = p.confirmations;
-        document.getElementById("payStatus").textContent = capitalize(status);
-      }
-
-      if (!TERMINAL.includes(status)) {
-        clearTimeout(pollTimer);
-        pollTimer = setTimeout(loadPayment, 10000);
-      }
-    } catch (e) {
+  function initPayment(p) {
+    if (!p) {
       showState("error");
-      document.getElementById("errMsg").textContent = e.message;
+      document.getElementById("errMsg").textContent = "Payment details are missing.";
+      return;
     }
-  }
 
-  function renderPayment(p, status) {
+    const status = (p.status?.value ?? p.status ?? "").toLowerCase();
     const createdAt = parseApiDate(p.created_at);
     expiresAt = parseApiDate(p.expires_at);
 
     if (!createdAt || !expiresAt || isNaN(expiresAt.getTime())) {
       console.error("Invalid payment dates", p);
       showState("error");
-      document.getElementById("errMsg").textContent =
-        "Invalid payment expiration date.";
+      document.getElementById("errMsg").textContent = "Invalid payment expiration date.";
       return;
     }
 
@@ -749,7 +712,7 @@ head %}
       return;
     }
 
-    // Active
+    // Active Pending State
     updateSteps(status);
     showState("pending");
 
@@ -765,8 +728,7 @@ head %}
       ? "tokens"
       : nativeSymbol;
     document.getElementById("payChain").textContent = p.chain.toUpperCase();
-    document.getElementById("payChainDetail").textContent =
-      p.chain.toUpperCase();
+    document.getElementById("payChainDetail").textContent = p.chain.toUpperCase();
     document.getElementById("payAddress").textContent = p.address;
     document.getElementById("payStatus").textContent = capitalize(status);
     document.getElementById("payConf").textContent = p.confirmations;
@@ -788,6 +750,14 @@ head %}
     }
 
     startCountdown();
+
+    // Trigger full page reload instead of API poll if the status is active
+    if (!TERMINAL.includes(status)) {
+      clearTimeout(refreshTimer);
+      refreshTimer = setTimeout(() => {
+        window.location.reload();
+      }, 10000);
+    }
   }
 
   function showState(s) {
@@ -803,13 +773,10 @@ head %}
       expired: "stateExpired",
       pending: "statePending",
     };
-    if (map[s])
-      document.getElementById(map[s]).style.display =
-        s === "pending" ? "flex" : "flex";
+    if (map[s]) document.getElementById(map[s]).style.display = "flex";
   }
 
   function updateSteps(status) {
-    // steps: 1=awaiting, 2=detected, 3=confirmed, 4=complete
     const idx = { pending: 1, detected: 2, confirmed: 3, paid: 4, settled: 4 };
     const current = idx[status] ?? (EXPIRED.includes(status) ? 0 : 1);
     const isError = EXPIRED.includes(status);
@@ -847,10 +814,7 @@ head %}
   function tick() {
     const remaining = Math.max(0, Math.floor((expiresAt - Date.now()) / 1000));
     const elapsed = Math.max(0, Date.now() - (expiresAt - totalDuration));
-    const pct = Math.max(
-      0,
-      Math.min(100, 100 - (elapsed / totalDuration) * 100),
-    );
+    const pct = Math.max(0, Math.min(100, 100 - (elapsed / totalDuration) * 100));
     const urgent = remaining < 120;
 
     const m = String(Math.floor(remaining / 60)).padStart(2, "0");
@@ -888,7 +852,7 @@ head %}
     });
   }
 
-  // boot
-  loadPayment();
+  // Boot UI using data supplied directly from the backend context
+  initPayment(paymentData);
 </script>
 {% endblock %}

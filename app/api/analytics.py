@@ -278,8 +278,6 @@ async def get_payment_detail(payment_id: UUID, db: AsyncSession = Depends(get_as
         select(ApiKey.name).where(ApiKey.id == payment.api_key_id)
     )).scalar()
 
-    print(f"API Key Name: {api_key_name}")  # Debugging line to check the value of api_key_name
-
     return PaymentDetail(
         id=str(payment.id),
         chain=payment.chain,
