@@ -143,7 +143,7 @@ class WalletKeyManager:
         Derive addresses for multiple subjects at once.
 
         Returns:
-            A dict mapping each payment_id → Ethereum address.
+            A dict mapping each payment_id -> Ethereum address.
         """
         return {
             payment_id: self.derive_address(payment_id, key_version)

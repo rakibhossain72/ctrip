@@ -3,11 +3,11 @@ End-to-end payment simulation script.
 
 Flow
 ----
-1. Login with admin credentials  → receive JWT access token
-2. Create an API key             → receive raw key (shown once)
-3. Create a payment              → receive payment address
-4. Send a native ETH transaction → fund the payment address
-5. Poll payment status           → wait for DETECTED / CONFIRMED
+1. Login with admin credentials  -> receive JWT access token
+2. Create an API key             -> receive raw key (shown once)
+3. Create a payment              -> receive payment address
+4. Send a native ETH transaction -> fund the payment address
+5. Poll payment status           -> wait for DETECTED / CONFIRMED
 
 Usage
 -----
@@ -78,7 +78,7 @@ RESET  = "\033[0m"
 
 
 def ok(msg: str)   -> None: print(f"{GREEN}✓  {msg}{RESET}")
-def info(msg: str) -> None: print(f"{CYAN}→  {msg}{RESET}")
+def info(msg: str) -> None: print(f"{CYAN}->  {msg}{RESET}")
 def warn(msg: str) -> None: print(f"{YELLOW}⚠  {msg}{RESET}")
 def err(msg: str)  -> None: print(f"{RED}✗  {msg}{RESET}", file=sys.stderr)
 def step(n: int, title: str) -> None:
@@ -129,7 +129,7 @@ def get(url: str, *, headers: dict | None = None, label: str = "GET") -> dict:
 # ---------------------------------------------------------------------------
 
 def login(base_url: str, username: str, password: str) -> str:
-    """POST /auth/login → return access token."""
+    """POST /auth/login -> return access token."""
     step(1, "Admin login")
     info(f"Authenticating as '{username}' …")
 
@@ -152,7 +152,7 @@ def login(base_url: str, username: str, password: str) -> str:
 # ---------------------------------------------------------------------------
 
 def create_api_key(base_url: str, access_token: str, key_name: str = "example-script") -> str:
-    """POST /admin/api-keys → return raw API key."""
+    """POST /admin/api-keys -> return raw API key."""
     step(2, "Create API key")
     info(f"Creating API key '{key_name}' …")
 
@@ -168,7 +168,7 @@ def create_api_key(base_url: str, access_token: str, key_name: str = "example-sc
     if not raw_key:
         die(f"API key response missing raw_key: {data}")
 
-    ok(f"API key created  →  id: {data['id']}")
+    ok(f"API key created  ->  id: {data['id']}")
     ok(f"Raw key (shown once, store it safely): {BOLD}{raw_key}{RESET}")
     return raw_key
 
@@ -184,7 +184,7 @@ def create_payment(
     amount: int,
     token_contract_address: str | None = None,
 ) -> dict:
-    """POST /api/v1/payments/ → return payment record."""
+    """POST /api/v1/payments/ -> return payment record."""
     step(3, "Create payment")
 
     payload: dict = {"chain": chain, "amount": amount}
@@ -201,7 +201,7 @@ def create_payment(
         label="CREATE_PAYMENT",
     )
 
-    ok(f"Payment created  →  id: {data['id']}")
+    ok(f"Payment created  ->  id: {data['id']}")
     ok(f"Receiving address: {data['address']}")
     ok(f"Expires at: {data['expires_at']}")
     return data
@@ -241,7 +241,7 @@ def send_transaction(rpc_url: str, sender_key: str, to_address: str, value_wei: 
     tx_hash = w3.eth.send_raw_transaction(signed.raw_transaction)
     hex_hash = w3.to_hex(tx_hash)
 
-    ok(f"Transaction broadcast  →  {hex_hash}")
+    ok(f"Transaction broadcast  ->  {hex_hash}")
     return hex_hash
 
 

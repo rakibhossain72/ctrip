@@ -69,7 +69,7 @@ def get_blockchains() -> Dict[str, EVMClient]:
 
         clients[name] = EVMClient(
             rpc_urls=urls,
-            chain_id=chain_cfg.get("chain_id"),   # None → fetched lazily
+            chain_id=chain_cfg.get("chain_id"),   # None -> fetched lazily
             poa=bool(chain_cfg.get("poa", False)),
         )
         logger.info(

@@ -20,6 +20,7 @@ from app.blockchain.w3 import get_w3
 from app.db.async_session import AsyncSessionLocal
 from app.db.models.payment import Payment, PaymentStatus
 from app.services.webhook import WebhookService
+from app.services.blockchain.common import get_ws_url
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
@@ -27,22 +28,6 @@ logger = logging.getLogger(__name__)
 ERC20_TRANSFER_TOPIC = (
     "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
 )
-
-
-def _get_ws_url(chain_name: str) -> str | None:
-    """Return the first WebSocket RPC URL configured for a chain."""
-    for chain in settings.chains:
-        if chain.get("name", "").lower() != chain_name.lower():
-            continue
-        # rpc_urls list takes priority
-        for url in chain.get("rpc_urls") or []:
-            if url.startswith("ws://") or url.startswith("wss://"):
-                return url
-        # fall back to single rpc_url
-        url = chain.get("rpc_url", "")
-        if url.startswith("ws://") or url.startswith("wss://"):
-            return url
-    return None
 
 
 async def _dispatch_payment_webhook(payment: Payment) -> None:
@@ -272,7 +257,7 @@ class ScannerService:
 
         for chain in settings.chains:
             name = chain.get("name", "").lower()
-            ws_url = _get_ws_url(name)
+            ws_url = get_ws_url(name)
             if not ws_url:
                 logger.warning(
                     "[%s] No WebSocket URL in chains.yaml — skipping listener. "
