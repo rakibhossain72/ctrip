@@ -1,14 +1,14 @@
 """
 Utility for accessing the AsyncWeb3 instance for a given chain name.
 """
+
 from web3 import AsyncWeb3
-from app.blockchain.manager import get_blockchains
+from web3.middleware import ExtraDataToPOAMiddleware
+from web3.providers import AsyncHTTPProvider
 
-_blockchains = get_blockchains()
-
-
-def get_w3(chain_name: str) -> AsyncWeb3:
-    """Return the AsyncWeb3 instance for a configured chain."""
-    if chain_name not in _blockchains:
-        raise ValueError(f"Blockchain '{chain_name}' not configured")
-    return _blockchains[chain_name].w3
+def make_w3(url: str, poa: bool, timeout: int) -> AsyncWeb3:
+    """Create an AsyncWeb3 instance for *url*."""
+    w3 = AsyncWeb3(AsyncHTTPProvider(url, request_kwargs={"timeout": timeout}))
+    if poa:
+        w3.middleware_onion.inject(ExtraDataToPOAMiddleware, layer=0)
+    return w3

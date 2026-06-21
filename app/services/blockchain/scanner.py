@@ -9,21 +9,20 @@ are still called periodically via the ARQ cron.
 
 import datetime
 import asyncio
-import logging
 from typing import Dict
 
 from sqlalchemy import select, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from chain_sniper import ChainSniper
-from app.blockchain.w3 import get_w3
+from app.blockchain.manager import get_w3
 from app.db.async_session import AsyncSessionLocal
 from app.db.models.payment import Payment, PaymentStatus
 from app.services.webhook import WebhookService
 from app.services.blockchain.common import get_ws_url
 from app.core.config import settings
 
-logger = logging.getLogger(__name__)
+from app.core.logger import logger
 
 ERC20_TRANSFER_TOPIC = (
     "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"

@@ -1,6 +1,7 @@
 """
 API endpoints for managing payments.
 """
+
 from datetime import timedelta
 from uuid import UUID, uuid4
 
@@ -90,8 +91,9 @@ async def get_payment(
     res = await db.execute(select(Payment).where(Payment.id == payment_id))
     db_payment = res.scalars().first()
     if not db_payment:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Payment not found")
-    
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Payment not found"
+        )
 
     # get the API key name for attribution (optional)
     api_key_name = None

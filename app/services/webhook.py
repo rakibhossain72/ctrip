@@ -4,12 +4,10 @@ Service for sending webhooks with optional HMAC signatures.
 import hashlib
 import hmac
 import json
-import logging
 from typing import Any, Dict, Optional
-
 import httpx
 
-logger = logging.getLogger(__name__)
+from app.core.logger import logger
 
 
 # pylint: disable=too-few-public-methods

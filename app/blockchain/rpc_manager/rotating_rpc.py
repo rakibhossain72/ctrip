@@ -12,7 +12,6 @@ Subscriptions use the v7 SubscriptionManager API:
 """
 
 import asyncio
-import logging
 import time
 from typing import Any, Callable, Optional
 

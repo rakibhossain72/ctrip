@@ -16,14 +16,15 @@ Each chain entry supports a single endpoint or a prioritised fallback list:
     chain_id: 1
     poa: false
 """
-import logging
+
 import os
 from typing import Dict, List
+from web3 import AsyncWeb3
 
 from app.core.config import settings
 from app.blockchain.client import EVMClient
 
-logger = logging.getLogger(__name__)
+from app.core.logger import logger
 
 
 def _resolve_urls(chain_cfg: dict) -> List[str]:
@@ -69,12 +70,14 @@ def get_blockchains() -> Dict[str, EVMClient]:
 
         clients[name] = EVMClient(
             rpc_urls=urls,
-            chain_id=chain_cfg.get("chain_id"),   # None -> fetched lazily
+            chain_id=chain_cfg.get("chain_id"),  # None -> fetched lazily
             poa=bool(chain_cfg.get("poa", False)),
         )
         logger.info(
             "Registered chain '%s' with %d endpoint(s): %s",
-            name, len(urls), urls[0] if len(urls) == 1 else urls,
+            name,
+            len(urls),
+            urls[0] if len(urls) == 1 else urls,
         )
 
     if not clients:
@@ -89,3 +92,13 @@ def get_blockchains() -> Dict[str, EVMClient]:
         clients["anvil"] = EVMClient(rpc_urls=[fallback_url], chain_id=31337)
 
     return clients
+
+
+
+def get_w3(chain_name: str) -> AsyncWeb3:
+    """Return the AsyncWeb3 instance for a configured chain."""
+    _blockchains = get_blockchains()
+
+    if chain_name not in _blockchains:
+        raise ValueError(f"Blockchain '{chain_name}' not configured")
+    return _blockchains[chain_name].w3

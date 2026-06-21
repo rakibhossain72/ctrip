@@ -20,32 +20,15 @@ chains.yaml supports both forms:
     poa: false    # set true for BSC, Polygon, etc.
 """
 
-import json
-import logging
-import pathlib
 import time
 from typing import Any, Dict, List, Optional
 
 from eth_account import Account
 from web3 import AsyncWeb3
-from web3.middleware import ExtraDataToPOAMiddleware
-from web3.providers import AsyncHTTPProvider
 
-logger = logging.getLogger(__name__)
-
-with open(
-    pathlib.Path(__file__).parent / "ABI/ERC20.json",
-    encoding="utf-8",
-) as _f:
-    ERC20_ABI = json.load(_f)
-
-
-def _make_w3(url: str, poa: bool, timeout: int) -> AsyncWeb3:
-    """Create an AsyncWeb3 instance for *url*."""
-    w3 = AsyncWeb3(AsyncHTTPProvider(url, request_kwargs={"timeout": timeout}))
-    if poa:
-        w3.middleware_onion.inject(ExtraDataToPOAMiddleware, layer=0)
-    return w3
+from app.blockchain.ABI import get_erc20_abi
+from app.core.logger import logger
+from app.blockchain.w3 import make_w3
 
 
 class EVMClient:
@@ -89,7 +72,7 @@ class EVMClient:
 
         # Build a web3 instance for every URL up front so we can swap instantly
         self._w3_pool: List[AsyncWeb3] = [
-            _make_w3(url, poa, request_timeout) for url in self.rpc_urls
+            make_w3(url, poa, request_timeout) for url in self.rpc_urls
         ]
 
         self._gas_price_cache: Optional[int] = None
@@ -97,7 +80,6 @@ class EVMClient:
         self._gas_cache_ttl: int = 10  # seconds
 
     # Active web3 instance
-
     @property
     def w3(self) -> AsyncWeb3:
         """The currently active AsyncWeb3 instance."""
@@ -163,7 +145,6 @@ class EVMClient:
         raise last_exc  # type: ignore[misc]
 
     # Chain ID
-
     async def get_chain_id(self) -> int:
         """Return the chain ID, fetching it from the node if not known."""
         if self._chain_id is None:
@@ -173,27 +154,45 @@ class EVMClient:
         return self._chain_id
 
     # Connectivity
-
     async def is_connected(self) -> bool:
-        """Return True if at least one RPC endpoint is reachable."""
-        for i, w3 in enumerate(self._w3_pool):
+        """Return True if at least one RPC endpoint is reachable.
+
+        Checks endpoints starting from the active index for efficiency,
+        then falls back to other endpoints if needed.
+        """
+        pool_size = len(self._w3_pool)
+
+        # Check active endpoint first (most likely to be working)
+        for offset in range(pool_size):
+            # Start from active index, then cycle through others
+            index = (self._active_index + offset) % pool_size
+            w3 = self._w3_pool[index]
+
             try:
                 if await w3.is_connected():
-                    if i != self._active_index:
+                    if index != self._active_index:
                         logger.info(
                             "Connectivity check: switching active endpoint to [%d/%d] %s",
-                            i + 1,
-                            len(self.rpc_urls),
-                            self.rpc_urls[i],
+                            index + 1,
+                            pool_size,
+                            self.rpc_urls[index],
                         )
-                        self._active_index = i
+                        self._active_index = index
                     return True
-            except Exception:  # pylint: disable=broad-exception-caught
-                pass
+
+            except Exception as exc:  # pylint: disable=broad-exception-caught
+                logger.debug(
+                    "RPC endpoint [%d/%d] %s is unreachable: %s",
+                    index + 1,
+                    pool_size,
+                    self.rpc_urls[index],
+                    exc,
+                )
+
+        logger.warning("All %d RPC endpoints are unreachable", pool_size)
         return False
 
     # Balances
-
     async def get_balance(self, address: str) -> int:
         """Native token balance in wei."""
         cs = AsyncWeb3.to_checksum_address(address)
@@ -205,7 +204,7 @@ class EVMClient:
         async def _call():
             contract = self.w3.eth.contract(
                 address=AsyncWeb3.to_checksum_address(token_address),
-                abi=ERC20_ABI,
+                abi=get_erc20_abi(),
             )
             return await contract.functions.balanceOf(
                 AsyncWeb3.to_checksum_address(wallet_address)
@@ -214,7 +213,6 @@ class EVMClient:
         return await self._call_with_failover(_call)
 
     # Gas
-
     async def get_gas_price(self, use_cache: bool = True) -> int:
         """Legacy gas price with optional short-lived cache."""
         if use_cache and self._gas_price_cache is not None:
@@ -303,13 +301,11 @@ class EVMClient:
         )
 
     # Block helpers
-
     async def get_latest_block(self) -> int:
         """Return the latest block number."""
         return await self._call_with_failover(lambda: self.w3.eth.block_number)
 
     # Repr
-
     def __repr__(self) -> str:
         active = self.rpc_urls[self._active_index]
         return (

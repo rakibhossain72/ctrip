@@ -1,13 +1,12 @@
 """
 Service for sweeping confirmed payments to an admin wallet.
 """
-import logging
 from eth_account import Account
 from sqlalchemy import select, and_
 from app.db.models.payment import Payment
 from app.core.config import settings
 
-logger = logging.getLogger(__name__)
+from app.core.logger import logger
 
 
 # pylint: disable=too-few-public-methods
