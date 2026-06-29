@@ -22,6 +22,7 @@ from app.schemas.payment import PaymentCreate, PaymentRead
 from app.api.dependencies import get_wallet_manager, get_blockchains, require_api_key
 from app.core.config import settings
 from app.utils.helpers import now_utc
+from app.core.logger import logger
 
 router = APIRouter(prefix="/api/v1/payments", tags=["payments"])
 
@@ -39,13 +40,24 @@ async def create_payment(
     api_key=Depends(require_api_key),
 ):
     if payment_req.chain not in blockchains:
+        logger.warning(
+            f"Payment creation failed: unsupported chain '{payment_req.chain}' "
+            f"requested by API Key ID: {api_key.id}"
+        )
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=f"Unsupported chain: {payment_req.chain}",
         )
 
     payment_id = uuid4()
-    address = wallet_manager.derive_address(str(payment_id))
+    try:
+        address = wallet_manager.derive_address(str(payment_id))
+    except Exception as e:
+        logger.error(f"Failed to derive wallet address for payment {payment_id}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to generate payment address.",
+        )
 
     db_payment = Payment(
         id=payment_id,
@@ -66,8 +78,14 @@ async def create_payment(
         db.add(db_wallet)
         await db.commit()
         await db.refresh(db_payment)
-    except Exception:
+        
+        logger.info(
+            f"Payment {payment_id} successfully created on chain '{payment_req.chain}' "
+            f"with deposit address {address} (API Key ID: {api_key.id})"
+        )
+    except Exception as e:
         await db.rollback()
+        logger.error(f"Database error persisting payment {payment_id}: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to persist payment.",
@@ -79,23 +97,21 @@ async def create_payment(
 @router.get(
     "/{payment_id}",
     response_model=PaymentRead,
-    dependencies=[Depends(require_api_key)],  # protect this endpoint too
+    dependencies=[Depends(require_api_key)],
 )
 async def get_payment(
     payment_id: UUID,
     db: AsyncSession = Depends(get_async_db),
 ):
-    """
-    Get payment details by ID.
-    """
     res = await db.execute(select(Payment).where(Payment.id == payment_id))
     db_payment = res.scalars().first()
+    
     if not db_payment:
+        logger.warning(f"Payment lookup failed: ID {payment_id} not found.")
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Payment not found"
         )
 
-    # get the API key name for attribution (optional)
     api_key_name = None
     if db_payment.api_key_id:
         api_key_res = await db.execute(
@@ -104,6 +120,14 @@ async def get_payment(
         api_key = api_key_res.scalars().first()
         if api_key:
             api_key_name = api_key.name
+        else:
+            logger.warning(
+                f"API Key ID {db_payment.api_key_id} associated with payment {payment_id} "
+                "could not be found in the database."
+            )
+
+    logger.debug(f"Payment metadata retrieved successfully for ID {payment_id}.")
+    
     payment_data = PaymentRead.from_orm(db_payment)
     payment_data.api_key_name = api_key_name
     return payment_data

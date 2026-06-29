@@ -2,7 +2,7 @@
 End-to-end payment simulation script.
 
 Flow
-----
+-
 1. Login with admin credentials  -> receive JWT access token
 2. Create an API key             -> receive raw key (shown once)
 3. Create a payment              -> receive payment address
@@ -10,7 +10,7 @@ Flow
 5. Poll payment status           -> wait for DETECTED / CONFIRMED
 
 Usage
------
+--
   python example/create_payment.py
 
 Options (override via env vars or command-line flags):
@@ -47,9 +47,9 @@ import requests
 import web3 as Web3Module
 from web3 import Web3
 
-# ---------------------------------------------------------------------------
+# 
 # Defaults
-# ---------------------------------------------------------------------------
+# 
 
 DEFAULTS = {
     "base_url":   os.getenv("BASE_URL",         "http://127.0.0.1:8000"),
@@ -65,9 +65,9 @@ DEFAULTS = {
     "chain":      os.getenv("PAYMENT_CHAIN",     "anvil"),
 }
 
-# ---------------------------------------------------------------------------
+# 
 # Formatting helpers
-# ---------------------------------------------------------------------------
+# 
 
 GREEN  = "\033[92m"
 YELLOW = "\033[93m"
@@ -94,9 +94,9 @@ def die(msg: str, code: int = 1) -> None:
     sys.exit(code)
 
 
-# ---------------------------------------------------------------------------
+# 
 # HTTP helpers
-# ---------------------------------------------------------------------------
+# 
 
 SESSION = requests.Session()
 SESSION.headers.update({"Content-Type": "application/json", "Accept": "application/json"})
@@ -124,9 +124,9 @@ def get(url: str, *, headers: dict | None = None, label: str = "GET") -> dict:
     return r.json()
 
 
-# ---------------------------------------------------------------------------
+# 
 # Step 1 — Login
-# ---------------------------------------------------------------------------
+# 
 
 def login(base_url: str, username: str, password: str) -> str:
     """POST /auth/login -> return access token."""
@@ -147,9 +147,9 @@ def login(base_url: str, username: str, password: str) -> str:
     return token
 
 
-# ---------------------------------------------------------------------------
+# 
 # Step 2 — Create API key
-# ---------------------------------------------------------------------------
+# 
 
 def create_api_key(base_url: str, access_token: str, key_name: str = "example-script") -> str:
     """POST /admin/api-keys -> return raw API key."""
@@ -173,9 +173,9 @@ def create_api_key(base_url: str, access_token: str, key_name: str = "example-sc
     return raw_key
 
 
-# ---------------------------------------------------------------------------
+# 
 # Step 3 — Create payment
-# ---------------------------------------------------------------------------
+# 
 
 def create_payment(
     base_url: str,
@@ -207,9 +207,9 @@ def create_payment(
     return data
 
 
-# ---------------------------------------------------------------------------
+# 
 # Step 4 — Send on-chain transaction
-# ---------------------------------------------------------------------------
+# 
 
 def send_transaction(rpc_url: str, sender_key: str, to_address: str, value_wei: int) -> str:
     """Sign and broadcast a native ETH transfer; returns the tx hash."""
@@ -245,9 +245,9 @@ def send_transaction(rpc_url: str, sender_key: str, to_address: str, value_wei: 
     return hex_hash
 
 
-# ---------------------------------------------------------------------------
+# 
 # Step 5 — Poll payment status
-# ---------------------------------------------------------------------------
+# 
 
 def poll_payment(
     base_url: str,
@@ -288,9 +288,9 @@ def poll_payment(
     return {}
 
 
-# ---------------------------------------------------------------------------
+# 
 # CLI argument parsing
-# ---------------------------------------------------------------------------
+# 
 
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(
@@ -311,9 +311,9 @@ def parse_args() -> argparse.Namespace:
     return p.parse_args()
 
 
-# ---------------------------------------------------------------------------
+# 
 # Main
-# ---------------------------------------------------------------------------
+# 
 
 def main() -> None:
     args = parse_args()
