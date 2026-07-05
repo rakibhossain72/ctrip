@@ -68,6 +68,12 @@ class BlockchainService:
 
     async def get_block(self, chain_id: int, block_number: int) -> Optional[BlockData]:
         return await self.block_reader.get_block(chain_id, block_number)
+    
+    async def get_block_transactions(self, chain_id: int, block_number: int) -> Optional[list[dict]]:
+        block = await self.get_block(chain_id, block_number)
+        if block is None:
+            return None
+        return block.get("transactions", [])
 
     # Log scanning
     async def get_logs(
