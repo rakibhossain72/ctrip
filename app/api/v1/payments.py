@@ -19,10 +19,18 @@ from app.db.models.wallets import PaymentWallet
 from app.wallet import WalletKeyManager
 
 from app.schemas.payment import PaymentCreate, PaymentRead
-from app.api.dependencies import get_wallet_manager, get_blockchains, require_api_key
+from app.api.dependencies import (
+    get_wallet_manager,
+    get_blockchains,
+    require_api_key,
+    get_arq_pool,
+)
 from app.core.config import settings
 from app.utils.helpers import now_utc
 from app.core.logger import logger
+
+
+from scanner.payment_registry import NATIVE_ASSET
 
 router = APIRouter(prefix="/api/v1/payments", tags=["payments"])
 
@@ -38,6 +46,7 @@ async def create_payment(
     wallet_manager: WalletKeyManager = Depends(get_wallet_manager),
     blockchains=Depends(get_blockchains),
     api_key=Depends(require_api_key),
+    arq_pool=Depends(get_arq_pool),
 ):
     if payment_req.chain not in blockchains:
         logger.warning(
@@ -78,18 +87,28 @@ async def create_payment(
         db.add(db_wallet)
         await db.commit()
         await db.refresh(db_payment)
-        
+
         logger.info(
             f"Payment {payment_id} successfully created on chain '{payment_req.chain}' "
             f"with deposit address {address} (API Key ID: {api_key.id})"
         )
     except Exception as e:
         await db.rollback()
-        logger.error(f"Database error persisting payment {payment_id}: {e}", exc_info=True)
+        logger.error(
+            f"Database error persisting payment {payment_id}: {e}", exc_info=True
+        )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to persist payment.",
         )
+
+    # Add payment address to registry for transaction scanning
+    await arq_pool.enqueue_job(
+        "add_address_to_registry",
+        payment_req.chain_id,
+        address,
+        payment_req.token_contract_address or NATIVE_ASSET,
+    )
 
     return db_payment
 
@@ -105,7 +124,7 @@ async def get_payment(
 ):
     res = await db.execute(select(Payment).where(Payment.id == payment_id))
     db_payment = res.scalars().first()
-    
+
     if not db_payment:
         logger.warning(f"Payment lookup failed: ID {payment_id} not found.")
         raise HTTPException(
@@ -127,7 +146,7 @@ async def get_payment(
             )
 
     logger.debug(f"Payment metadata retrieved successfully for ID {payment_id}.")
-    
+
     payment_data = PaymentRead.from_orm(db_payment)
     payment_data.api_key_name = api_key_name
     return payment_data

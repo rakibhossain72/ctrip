@@ -26,6 +26,10 @@ def get_wallet_manager(request: Request) -> WalletKeyManager:
     """Dependency to generate and access the payment wallet manager from app state."""
     return request.app.state.wallet_manager
 
+def get_arq_pool(request: Request):
+    """Dependency to access the Arq connection pool from app state."""
+    return request.app.state.arq_pool
+
 
 async def require_admin(token: str = Security(_oauth2_scheme)) -> str:
     """Validates the Bearer JWT access token. Returns the admin username."""

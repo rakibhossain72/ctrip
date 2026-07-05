@@ -14,10 +14,7 @@ from app.utils.helpers import wei_to_eth_str
 
 class PaymentBase(BaseSchema):
     """Base payment schema with shared fields."""
-    chain: str = Field(
-        ..., min_length=3, max_length=20,
-        description="Blockchain identifier e.g. ethereum, bsc, base"
-    )
+    chain_id: int = Field(..., gt=0, description="Blockchain identifier")
     token_contract_address: Optional[str] = Field(
         None, max_length=120,
         description="ERC20 token contract address; omit for native token payments"
@@ -30,7 +27,7 @@ class PaymentBase(BaseSchema):
 class PaymentCreate(BaseSchema):
     """Schema for creating a new payment."""
     amount: int = Field(..., gt=0, description="Amount in Wei or token base unit")
-    chain: str = Field(..., min_length=3, max_length=20, description="Blockchain identifier")
+    chain_id: int  = Field(..., gt=0, description="Blockchain identifier")
     token_contract_address: Optional[str] = Field(
         None, max_length=120,
         description="ERC20 token contract address; omit for native token payments"
