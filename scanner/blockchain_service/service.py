@@ -1,113 +1,83 @@
 from __future__ import annotations
 
-from typing import Optional, Iterable
+from typing import Iterable, Optional
 
-from web3.types import BlockData, LogReceipt
-
-from app.core.logger import listener_logger as log
-from app.blockchain.ABI import get_erc20_abi
-from app.workers.utils import get_enabled_chains
-from scanner.blockchain_service.log_scanner import LogScanner
-
-from .connection import ChainConnectionManager
-from .retry import RetryPolicy
-from .block_reader import BlockReader
-from .constants import MAX_RETRIES, RETRY_BACKOFF
+from app.blockchain.chains import ChainConfig, load_chains
+from app.blockchain.client import EVMClient
+from scanner.constants import ERC20_TRANSFER_TOPIC
+from scanner.matching import addresses_to_topics
 
 
 class BlockchainService:
-    """High-level service for interacting with multiple blockchains."""
+    """
+    Blockchain-facing scanning facade.
 
-    def __init__(self) -> None:
-        self.connections = ChainConnectionManager(get_enabled_chains())
-        self.retry_policy = RetryPolicy(MAX_RETRIES, RETRY_BACKOFF)
-        self.block_reader = BlockReader(self.connections, self.retry_policy)
-        self.log_scanner = LogScanner(self.connections, self.retry_policy)
-        self.erc20_abi = self._load_erc20_abi()
-        self.last_scanned_blocks: dict[int, int] = {}
+    Wraps one `app.blockchain.client.EVMClient` per configured chain, giving
+    the scanner a small, stable surface: current block, full blocks, and
+    ERC-20 Transfer logs. All RPC failover/retry lives in EVMClient.
+    """
 
-    # Backwards-compatible passthroughs
-    @property
-    def w3s(self):
-        return self.connections.w3s
+    def __init__(self, chains: Iterable[ChainConfig] | None = None) -> None:
+        chains = list(chains) if chains is not None else list(load_chains())
+        self._clients: dict[int, EVMClient] = {
+            chain.chain_id: EVMClient(
+                rpc_urls=list(chain.http_urls),
+                chain_id=chain.chain_id,
+                poa=chain.poa,
+            )
+            for chain in chains
+        }
 
-    @property
-    def chains_by_id(self):
-        return self.connections.chains_by_id
+    def client(self, chain_id: int) -> EVMClient:
+        try:
+            return self._clients[chain_id]
+        except KeyError:
+            raise ValueError(f"Chain {chain_id} is not configured") from None
 
-    @property
-    def enabled_chains(self):
-        return self.connections.enabled_chains
+    async def get_current_block(self, chain_id: int) -> int:
+        return await self.client(chain_id).get_latest_block()
 
-    # Lifecycle
-    async def __aenter__(self) -> "BlockchainService":
-        await self.connect_to_chains()
-        return self
+    async def get_block_transactions(
+        self, chain_id: int, block_number: int
+    ) -> list[dict]:
+        block = await self.client(chain_id).get_block(
+            block_number, full_transactions=True
+        )
+        return list(block.get("transactions") or [])
 
-    async def __aexit__(self, *_exc_info) -> None:
-        await self.close()
+    async def get_transfer_logs(
+        self,
+        chain_id: int,
+        *,
+        from_block: int,
+        to_block: int,
+        from_addresses: Optional[Iterable[str]] = None,
+        to_addresses: Optional[Iterable[str]] = None,
+        token_addresses: Optional[Iterable[str]] = None,
+    ) -> list[dict]:
+        filter_params: dict = {"fromBlock": from_block, "toBlock": to_block}
 
-    async def connect_to_chains(self) -> None:
-        await self.connections.connect_all()
+        token_list = list(token_addresses) if token_addresses else None
+        if token_list:
+            filter_params["address"] = token_list
+
+        topics: list = [ERC20_TRANSFER_TOPIC]
+        from_topics = addresses_to_topics(from_addresses)
+        to_topics = addresses_to_topics(to_addresses)
+        if from_topics is not None or to_topics is not None:
+            topics.append(from_topics)  # None here means "any sender"
+            if to_topics is not None:
+                topics.append(to_topics)
+        filter_params["topics"] = topics
+
+        return await self.client(chain_id).get_logs(filter_params)
 
     async def close(self) -> None:
-        await self.connections.close_all()
-
-    # ABI
-    @staticmethod
-    def _load_erc20_abi():
-        try:
-            return get_erc20_abi()
-        except Exception:
-            log.exception("Failed to load ERC20 ABI")
-            raise
-
-    # Block reads
-    async def get_block_number(self, chain_id: int) -> Optional[int]:
-        return await self.block_reader.get_block_number(chain_id)
-
-    async def get_block(self, chain_id: int, block_number: int) -> Optional[BlockData]:
-        return await self.block_reader.get_block(chain_id, block_number)
-    
-    async def get_block_transactions(self, chain_id: int, block_number: int) -> Optional[list[dict]]:
-        block = await self.get_block(chain_id, block_number)
-        if block is None:
-            return None
-        return block.get("transactions", [])
-
-    # Log scanning
-    async def get_logs(
-        self,
-        chain_id: int,
-        *,
-        from_block: int,
-        to_block: int,
-        address: Optional[list[str]] = None,
-        topics: Optional[list] = None,
-    ) -> Optional[list[LogReceipt]]:
-        return await self.log_scanner.get_logs(
-            chain_id,
-            from_block=from_block,
-            to_block=to_block,
-            address=address,
-            topics=topics,
-        )
-
-    async def get_erc20_transfer_logs(
-        self,
-        chain_id: int,
-        *,
-        from_block: int,
-        to_block: int,
-        token_addresses: Optional[Iterable[str]] = None,
-        sender_addresses: Optional[Iterable[str]] = None,
-        receiver_addresses: Optional[Iterable[str]] = None,
-    ) -> Optional[list[LogReceipt]]:
-        return await self.log_scanner.get_erc20_transfer_logs(
-            chain_id,
-            from_block=from_block,
-            to_block=to_block,
-            token_addresses=token_addresses,
-            sender_addresses=sender_addresses,
-            receiver_addresses=receiver_addresses,
-        )
+        for client in self._clients.values():
+            for w3 in client._w3_pool:  # pylint: disable=protected-access
+                disconnect = getattr(w3.provider, "disconnect", None)
+                if disconnect is not None:
+                    try:
+                        await disconnect()
+                    except Exception:  # pragma: no cover - best-effort cleanup
+                        pass

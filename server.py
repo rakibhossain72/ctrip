@@ -6,6 +6,9 @@ from contextlib import asynccontextmanager
 from typing import AsyncIterator
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
+from arq import create_pool
 
 from app.api.health import health_router
 from app.api.v1.payments import router as payments_router
@@ -17,9 +20,9 @@ from app.api.ui import router as ui_router
 from app.wallet import WalletKeyManager
 from app.blockchain.manager import get_blockchains
 from app.db.async_session import AsyncSessionLocal
-from app.db.seed import add_chain_states, seed_default_admin
+from app.db.seed import seed_default_admin
 from app.core.config import settings
-from fastapi.middleware.cors import CORSMiddleware
+from app.workers import get_redis_settings
 
 
 @asynccontextmanager
@@ -41,12 +44,10 @@ async def lifespan(fastapi_app: FastAPI) -> AsyncIterator[None]:
     # Base.metadata.create_all(bind=engine)
 
     async with AsyncSessionLocal() as session:
-        await add_chain_states(session, fastapi_app.state.blockchains)
         await seed_default_admin(session)
 
-    # Background workers are now handled by ARQ worker process
-    # Start with: python run_worker.py
-    # Workers run automatically via cron schedules
+    # Initialize Redis connection pool for background jobs
+    fastapi_app.state.arq_pool = await create_pool(get_redis_settings())
 
     yield
 

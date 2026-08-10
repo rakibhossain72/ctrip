@@ -21,16 +21,13 @@ from app.wallet import WalletKeyManager
 from app.schemas.payment import PaymentCreate, PaymentRead
 from app.api.dependencies import (
     get_wallet_manager,
-    get_blockchains,
     require_api_key,
-    get_arq_pool,
 )
+from app.blockchain.chains import chain_by_id
 from app.core.config import settings
 from app.utils.helpers import now_utc
 from app.core.logger import logger
 
-
-from scanner.payment_registry import NATIVE_ASSET
 
 router = APIRouter(prefix="/api/v1/payments", tags=["payments"])
 
@@ -44,18 +41,17 @@ async def create_payment(
     payment_req: PaymentCreate,
     db: AsyncSession = Depends(get_async_db),
     wallet_manager: WalletKeyManager = Depends(get_wallet_manager),
-    blockchains=Depends(get_blockchains),
     api_key=Depends(require_api_key),
-    arq_pool=Depends(get_arq_pool),
 ):
-    if payment_req.chain not in blockchains:
+    chain_cfg = chain_by_id(payment_req.chain_id)
+    if chain_cfg is None:
         logger.warning(
-            f"Payment creation failed: unsupported chain '{payment_req.chain}' "
+            f"Payment creation failed: unsupported chain_id '{payment_req.chain_id}' "
             f"requested by API Key ID: {api_key.id}"
         )
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=f"Unsupported chain: {payment_req.chain}",
+            detail=f"Unsupported chain_id: {payment_req.chain_id}",
         )
 
     payment_id = uuid4()
@@ -68,10 +64,17 @@ async def create_payment(
             detail="Failed to generate payment address.",
         )
 
+    token_address = (
+        payment_req.token_contract_address.strip().lower()
+        if payment_req.token_contract_address
+        else None
+    )
+
     db_payment = Payment(
         id=payment_id,
-        chain=payment_req.chain,
-        token_contract_address=payment_req.token_contract_address,
+        chain=chain_cfg.name,
+        chain_id=chain_cfg.chain_id,
+        token_contract_address=token_address,
         address=address,
         amount=payment_req.amount,
         expires_at=now_utc() + timedelta(minutes=settings.payment_expiry_minutes),
@@ -89,7 +92,7 @@ async def create_payment(
         await db.refresh(db_payment)
 
         logger.info(
-            f"Payment {payment_id} successfully created on chain '{payment_req.chain}' "
+            f"Payment {payment_id} successfully created on chain '{chain_cfg.name}' "
             f"with deposit address {address} (API Key ID: {api_key.id})"
         )
     except Exception as e:
@@ -102,14 +105,8 @@ async def create_payment(
             detail="Failed to persist payment.",
         )
 
-    # Add payment address to registry for transaction scanning
-    await arq_pool.enqueue_job(
-        "add_address_to_registry",
-        payment_req.chain_id,
-        address,
-        payment_req.token_contract_address or NATIVE_ASSET,
-    )
-
+    # No registry update needed — the scanner reads pending payments straight
+    # from the DB on its next tick (within 10s).
     return db_payment
 
 

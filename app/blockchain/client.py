@@ -305,6 +305,16 @@ class EVMClient:
         """Return the latest block number."""
         return await self._call_with_failover(lambda: self.w3.eth.block_number)
 
+    async def get_block(self, block_number: int, full_transactions: bool = True):
+        """Return a block by number (optionally with full transactions)."""
+        return await self._call_with_failover(
+            lambda: self.w3.eth.get_block(block_number, full_transactions=full_transactions)
+        )
+
+    async def get_logs(self, filter_params: dict):
+        """Fetch logs matching an eth_getLogs filter dict."""
+        return await self._call_with_failover(lambda: self.w3.eth.get_logs(filter_params))
+
     # Repr
     def __repr__(self) -> str:
         active = self.rpc_urls[self._active_index]

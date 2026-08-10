@@ -29,10 +29,10 @@ async def sweep_funds(ctx):  # pylint: disable=unused-argument
         async with async_session() as session:
             sweeper_service = SweeperService(session, wallet_manager)
 
-            for chain_name in chains:
-                logger.info("Sweeping chain: %s", chain_name)
-                await sweeper_service.sweep_confirmed_payments(chain_name)
-                logger.info("Sweep completed for %s", chain_name)
+            for chain in chains:
+                logger.info("Sweeping chain: %s", chain.name)
+                await sweeper_service.sweep_confirmed_payments(chain.name)
+                logger.info("Sweep completed for %s", chain.name)
 
         logger.info("Sweep cycle complete")
         logger.info("=" * 60)

@@ -48,6 +48,7 @@ class Payment(Base):
     )  # ERC20 contract address; None = native token
     api_key_id = Column(UUID(as_uuid=True), ForeignKey("api_keys.id"), nullable=False)
     chain = Column(String, nullable=False)
+    chain_id = Column(Integer, nullable=True, index=True)
     address = Column(String, nullable=False)
     amount = Column(Numeric(precision=80, scale=0), nullable=False)
     status = Column(

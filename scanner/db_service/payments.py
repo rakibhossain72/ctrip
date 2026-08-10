@@ -1,95 +1,87 @@
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, update
-from app.db.models import Payment, PaymentWallet, PaymentStatus
+from __future__ import annotations
+
 from datetime import datetime, timezone
 
+from sqlalchemy import select, update
+from sqlalchemy.ext.asyncio import AsyncSession
 
-# read / queries
-async def get_payment_by_address(db: AsyncSession, address: str) -> Payment | None:
-    """Fetch a Payment by its address."""
-    result = await db.execute(select(Payment).where(Payment.address == address))
-    return result.scalar_one_or_none()
+from app.blockchain.chains import chain_name_for_id
+from app.db.models import Payment, PaymentStatus
 
 
-async def get_payments_by_addresses(
-    db: AsyncSession, addresses: list[str]
+def _now() -> datetime:
+    return datetime.now(timezone.utc).replace(tzinfo=None)
+
+
+async def get_pending_native(db: AsyncSession, chain_id: int) -> dict[str, Payment]:
+    """Map of lower-cased address -> Payment for pending, unexpired native
+    payments on *chain_id*."""
+    result = await db.execute(
+        select(Payment).where(
+            Payment.chain == chain_name_for_id(chain_id),
+            Payment.chain_id == chain_id,
+            Payment.token_contract_address.is_(None),
+            Payment.status == PaymentStatus.PENDING,
+            Payment.expires_at > _now(),
+        )
+    )
+    return {p.address.lower(): p for p in result.scalars().all()}
+
+
+async def get_pending_erc20(
+    db: AsyncSession, chain_id: int, token_address: str
 ) -> dict[str, Payment]:
+    """Map of lower-cased address -> Payment for pending, unexpired ERC-20
+    payments for *token_address* on *chain_id*."""
     result = await db.execute(
-        select(Payment)
-        .where(Payment.address.in_(addresses))
-        .where(Payment.status == PaymentStatus.PENDING)
+        select(Payment).where(
+            Payment.chain == chain_name_for_id(chain_id),
+            Payment.chain_id == chain_id,
+            Payment.token_contract_address.is_(None).is_(False),
+            Payment.token_contract_address == token_address.lower(),
+            Payment.status == PaymentStatus.PENDING,
+            Payment.expires_at > _now(),
+        )
     )
-    return {p.address: p for p in result.scalars().all()}
+    return {p.address.lower(): p for p in result.scalars().all()}
 
 
-async def get_payment_wallet_by_address(
-    db: AsyncSession, address: str
-) -> PaymentWallet | None:
-    """Fetch a PaymentWallet by its address."""
-    result = await db.execute(
-        select(PaymentWallet).where(PaymentWallet.address == address)
-    )
-    return result.scalar_one_or_none()
+async def active_scan_targets(db: AsyncSession) -> dict[int, dict]:
+    """
+    Scan spec for every chain that currently has pending, unexpired payments.
 
-
-# write / updates
-async def update_payment_status(
-    db: AsyncSession, payment_id: int, new_status: PaymentStatus
-) -> bool:
-    """Update the status of a Payment in a single round-trip.
-
-    Returns True if a row was updated, False if no matching payment existed.
+    Returns {chain_id: {"native": bool, "tokens": set[str]}}. Tokens are
+    lower-cased contract addresses; native is True when at least one pending
+    payment has no token contract.
     """
     result = await db.execute(
-        update(Payment).where(Payment.id == payment_id).values(status=new_status)
+        select(Payment.chain_id, Payment.token_contract_address).where(
+            Payment.chain_id.is_not(None),
+            Payment.status == PaymentStatus.PENDING,
+            Payment.expires_at > _now(),
+        )
     )
-    await db.commit()
-    return result.rowcount > 0
+    targets: dict[int, dict] = {}
+    for chain_id, token in result.all():
+        spec = targets.setdefault(chain_id, {"native": False, "tokens": set()})
+        if token is None:
+            spec["native"] = True
+        else:
+            spec["tokens"].add(token.lower())
+    return targets
 
 
-async def update_payment_confirmations(
-    db: AsyncSession, payment_id: int, new_confirmations: int
+async def mark_detected(
+    db: AsyncSession, payment_id, block_number: int, confirmations: int = 1
 ) -> bool:
-    """Update the confirmations count of a Payment in a single round-trip.
-
-    Returns True if a row was updated, False if no matching payment existed.
-    """
-    result = await db.execute(
-        update(Payment)
-        .where(Payment.id == payment_id)
-        .values(confirmations=new_confirmations, updated_at=datetime.now(timezone.utc))
-    )
-    await db.commit()
-    return result.rowcount > 0
-
-
-async def update_payment_detected_block(
-    db: AsyncSession, payment_id: int, detected_in_block: int
-) -> bool:
-    """Update the detected_in_block of a Payment in a single round-trip.
-
-    Returns True if a row was updated, False if no matching payment existed.
-    """
+    """Transition a payment to DETECTED in a single round-trip."""
     result = await db.execute(
         update(Payment)
         .where(Payment.id == payment_id)
         .values(
-            detected_in_block=detected_in_block, updated_at=datetime.now(timezone.utc)
+            status=PaymentStatus.DETECTED,
+            detected_in_block=block_number,
+            confirmations=confirmations,
         )
     )
-    await db.commit()
-    return result.rowcount > 0
-
-
-async def update_payment(db: AsyncSession, payment_id: int, **updates) -> bool:
-    """Update a Payment with the given fields in a single round-trip.
-
-    Returns True if a row was updated, False if no matching payment existed.
-    """
-    result = await db.execute(
-        update(Payment)
-        .where(Payment.id == payment_id)
-        .values(**updates, updated_at=datetime.now(timezone.utc))
-    )
-    await db.commit()
     return result.rowcount > 0

@@ -6,8 +6,8 @@
 # Keys:
 #   name      (required) — identifier used throughout the app
 #   rpc_url   — single endpoint (backward-compatible shorthand)
-#   rpc_urls  — ordered list of endpoints; tried top-to-bottom on failure
-#               rpc_url and rpc_urls can both be set; rpc_urls is tried first
+#   rpc_urls  — ordered list of HTTP RPC endpoints; tried top-to-bottom on failure
+#   ws_urls   — WebSocket endpoints for real-time subscriptions
 #   chain_id  (optional) — auto-fetched from the node if omitted
 #   poa       (optional) — set true for PoA networks (BSC, Polygon, etc.)
 #
@@ -29,9 +29,19 @@
 #   chain_id: 56
 #   poa: true
 
-- name: anvil
+# - name: anvil
+#   rpc_urls:
+#     - http://localhost:8545
+#   ws_urls:
+#     - ws://localhost:8545
+#   chain_id: 31337
+#   poa: false
+
+
+- name: sepolia
   rpc_urls:
-    # - ws://localhost:8545
-    - ws://host.docker.internal:8545
-  chain_id: 31337
+    - https://eth-sepolia.api.onfinality.io/public
+  ws_urls:
+    - wss://lb.drpc.live/sepolia/Ak4Rc0Ndw0plhw3eTUmEmd0sKiImbOAR8Z1EVjewFaCJ
+  chain_id: 11155111
   poa: false
