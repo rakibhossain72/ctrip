@@ -13,13 +13,14 @@ from arq import cron
 
 from app.core.logger import listener_logger as logger
 from app.db.async_session import AsyncSessionLocal
+from app.db.seed import seed_default_data
 from app.workers import get_redis_settings
 from app.workers.listener import listen_for_payments, process_single_payment
 from app.workers.sweeper import sweep_funds, sweep_specific_address
 from app.workers.webhook import (
-    send_webhook_notification,
     retry_failed_webhooks,
     send_custom_webhook,
+    send_webhook_notification,
 )
 from scanner.blockchain_service import BlockchainService
 from scanner.cursor import RedisCursor
@@ -42,6 +43,9 @@ async def startup(ctx: Context):
     """Called when worker starts — build shared services into ctx."""
     logger.info("ARQ Worker starting")
     try:
+        async with AsyncSessionLocal() as db:
+            await seed_default_data(db)
+
         blockchain_service = BlockchainService()
         ctx["blockchain_service"] = blockchain_service
         ctx["cursor"] = RedisCursor(ctx["redis"])  # arq injects the pool as ctx["redis"]

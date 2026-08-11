@@ -1,31 +1,33 @@
 import datetime
-from typing import Optional, List
+from typing import List, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query, HTTPException
-from sqlalchemy import func, select, case
+from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import case, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import require_admin
+from app.blockchain.chains import chain_name_for_id
 from app.db.async_session import get_async_db
-from app.utils.helpers import now_utc, wei_to_eth_str
-from app.db.models.payment import Payment, PaymentStatus
-from app.db.models.transaction import Transaction
-from app.db.models.webhook_attempt import WebhookAttempt
 from app.db.models.api_key import ApiKey
+from app.db.models.chain import Chain
+from app.db.models.payment import Payment, PaymentStatus
+from app.db.models.payment_event import PaymentEvent
+from app.db.models.webhook_attempt import WebhookAttempt
 from app.schemas.analytics import (
-    PaymentCountByStatus,
-    PaymentVolumeSummary,
-    DailyVolume,
-    ChainBreakdown,
-    WebhookStats,
-    TransactionStats,
     ApiKeyStats,
+    ChainBreakdown,
+    DailyVolume,
     DashboardSummary,
+    PaymentCountByStatus,
     PaymentDetail,
+    PaymentVolumeSummary,
     TransactionDetail,
+    TransactionStats,
     WebhookAttemptDetail,
+    WebhookStats,
 )
+from app.utils.helpers import now_utc, wei_to_eth_str
 
 router = APIRouter(
     prefix="/admin/analytics",
@@ -33,55 +35,68 @@ router = APIRouter(
     dependencies=[Depends(require_admin)],
 )
 
+CONFIRMED_STATES = {PaymentStatus.CONFIRMED, PaymentStatus.PAID, PaymentStatus.SETTLED}
+PENDING_STATES = {PaymentStatus.PENDING, PaymentStatus.DETECTED}
 
+
+async def _payment_volume_rows(db: AsyncSession) -> dict[str, dict]:
+    """Status -> {count, vol} for all payments (vol in Wei)."""
+    rows = (await db.execute(
+        select(Payment.status, func.count().label("cnt"), func.sum(Payment.amount_raw).label("vol"))
+        .group_by(Payment.status)
+    )).all()
+    return {r.status.value: {"count": r.cnt, "vol": r.vol or 0} for r in rows}
+
+
+def _volume_summary(rows: dict[str, dict]) -> PaymentVolumeSummary:
+    def _c(s: str) -> int:
+        return rows.get(s, {}).get("count", 0)
+
+    def _v(s: str) -> int:
+        return rows.get(s, {}).get("vol", 0)
+
+    total_vol = sum(v["vol"] for v in rows.values())
+    total_count = sum(v["count"] for v in rows.values())
+
+    return PaymentVolumeSummary(
+        total_payments=total_count,
+        total_volume_wei=wei_to_eth_str(total_vol),
+        confirmed_volume_wei=wei_to_eth_str(_v("paid") + _v("settled")),
+        pending_count=_c("pending"),
+        confirmed_count=_c("confirmed") + _c("detected"),
+        expired_count=_c("expired"),
+        failed_count=_c("failed"),
+        settled_count=_c("settled"),
+        by_status=[PaymentCountByStatus(status=s, count=d["count"]) for s, d in rows.items()],
+    )
+
+
+async def _event_stats(db: AsyncSession) -> TransactionStats:
+    """Payment-event stats bucketed by the payment's current lifecycle state."""
+    rows = (await db.execute(
+        select(Payment.status, func.count().label("cnt"))
+        .select_from(PaymentEvent)
+        .join(Payment, PaymentEvent.payment_id == Payment.id)
+        .group_by(Payment.status)
+    )).all()
+
+    confirmed = sum(r.cnt for r in rows if r.status in CONFIRMED_STATES)
+    pending = sum(r.cnt for r in rows if r.status in PENDING_STATES)
+    return TransactionStats(
+        total_transactions=sum(r.cnt for r in rows),
+        confirmed=confirmed,
+        pending=pending,
+        failed=0,
+    )
 
 
 @router.get("/summary", response_model=DashboardSummary)
 async def dashboard_summary(db: AsyncSession = Depends(get_async_db)):
     """Single endpoint returning everything shown on the main dashboard."""
-    payment_rows = (await db.execute(
-        select(Payment.status, func.count().label("cnt"), func.sum(Payment.amount).label("vol"))
-        .group_by(Payment.status)
-    )).all()
+    status_map = await _payment_volume_rows(db)
+    payments = _volume_summary(status_map)
 
-    status_map: dict[str, dict] = {}
-    for row in payment_rows:
-        status_map[row.status.value] = {"count": row.cnt, "vol": row.vol or 0}
-
-    def _count(s: str) -> int:
-        return status_map.get(s, {}).get("count", 0)
-
-    def _vol(s: str) -> int:
-        return status_map.get(s, {}).get("vol", 0)
-
-    confirmed_vol = _vol("paid") + _vol("settled")
-    total_vol = sum(v["vol"] for v in status_map.values())
-    total_payments = sum(v["count"] for v in status_map.values())
-
-    by_status = [PaymentCountByStatus(status=s, count=d["count"]) for s, d in status_map.items()]
-
-    payments = PaymentVolumeSummary(
-        total_payments=total_payments,
-        total_volume_wei=wei_to_eth_str(total_vol),
-        confirmed_volume_wei=wei_to_eth_str(confirmed_vol),
-        pending_count=_count("pending"),
-        confirmed_count=_count("confirmed") + _count("detected"),
-        expired_count=_count("expired"),
-        failed_count=_count("failed"),
-        settled_count=_count("settled"),
-        by_status=by_status,
-    )
-
-    tx_rows = (await db.execute(
-        select(Transaction.status, func.count().label("cnt")).group_by(Transaction.status)
-    )).all()
-    tx_map = {r.status.value: r.cnt for r in tx_rows}
-    transactions = TransactionStats(
-        total_transactions=sum(tx_map.values()),
-        confirmed=tx_map.get("confirmed", 0),
-        pending=tx_map.get("pending", 0),
-        failed=tx_map.get("failed", 0),
-    )
+    transactions = await _event_stats(db)
 
     wh_rows = (await db.execute(
         select(WebhookAttempt.status, func.count().label("cnt"), func.sum(WebhookAttempt.retry_count).label("retries"))
@@ -102,7 +117,7 @@ async def dashboard_summary(db: AsyncSession = Depends(get_async_db)):
     key_rows = (await db.execute(
         select(
             func.count().label("total"),
-            func.sum(case((ApiKey.is_active == True, 1), else_=0)).label("active"),
+            func.sum(case((ApiKey.is_active, 1), else_=0)).label("active"),
             func.sum(case((ApiKey.last_used_at >= (now_utc() - datetime.timedelta(hours=24)), 1), else_=0)).label("recent"),
         )
     )).one()
@@ -127,30 +142,7 @@ async def dashboard_summary(db: AsyncSession = Depends(get_async_db)):
 @router.get("/payments/volume", response_model=PaymentVolumeSummary)
 async def payment_volume(db: AsyncSession = Depends(get_async_db)):
     """Total payment counts and volume broken down by status."""
-    rows = (await db.execute(
-        select(Payment.status, func.count().label("cnt"), func.sum(Payment.amount).label("vol"))
-        .group_by(Payment.status)
-    )).all()
-
-    status_map = {r.status.value: {"count": r.cnt, "vol": r.vol or 0} for r in rows}
-
-    def _c(s): return status_map.get(s, {}).get("count", 0)
-    def _v(s): return status_map.get(s, {}).get("vol", 0)
-
-    total_vol = sum(v["vol"] for v in status_map.values())
-    total_count = sum(v["count"] for v in status_map.values())
-
-    return PaymentVolumeSummary(
-        total_payments=total_count,
-        total_volume_wei=wei_to_eth_str(total_vol),
-        confirmed_volume_wei=wei_to_eth_str(_v("paid") + _v("settled")),
-        pending_count=_c("pending"),
-        confirmed_count=_c("confirmed") + _c("detected"),
-        expired_count=_c("expired"),
-        failed_count=_c("failed"),
-        settled_count=_c("settled"),
-        by_status=[PaymentCountByStatus(status=s, count=d["count"]) for s, d in status_map.items()],
-    )
+    return _volume_summary(await _payment_volume_rows(db))
 
 
 @router.get("/payments/daily", response_model=List[DailyVolume])
@@ -164,7 +156,7 @@ async def daily_payment_volume(
         select(
             func.date(Payment.created_at).label("day"),
             func.count().label("cnt"),
-            func.sum(Payment.amount).label("vol"),
+            func.sum(Payment.amount_raw).label("vol"),
         )
         .where(Payment.created_at >= since)
         .group_by(func.date(Payment.created_at))
@@ -178,12 +170,13 @@ async def daily_payment_volume(
 async def payments_by_chain(db: AsyncSession = Depends(get_async_db)):
     """Breakdown of payment count and volume per blockchain."""
     rows = (await db.execute(
-        select(Payment.chain, func.count().label("cnt"), func.sum(Payment.amount).label("vol"))
-        .group_by(Payment.chain)
+        select(Chain.name, func.count().label("cnt"), func.sum(Payment.amount_raw).label("vol"))
+        .join(Chain, Payment.chain_id == Chain.id)
+        .group_by(Chain.name)
         .order_by(func.count().desc())
     )).all()
 
-    return [ChainBreakdown(chain=r.chain, count=r.cnt, volume_wei=wei_to_eth_str(r.vol or 0)) for r in rows]
+    return [ChainBreakdown(chain=r.name, count=r.cnt, volume_wei=wei_to_eth_str(r.vol or 0)) for r in rows]
 
 
 @router.get("/payments/recent", response_model=List[dict])
@@ -205,9 +198,9 @@ async def recent_payments(
     return [
         {
             "id": str(p.id),
-            "chain": p.chain,
+            "chain": chain_name_for_id(p.chain_id),
             "address": p.address,
-            "amount_wei": wei_to_eth_str(p.amount),
+            "amount_wei": wei_to_eth_str(p.amount_raw),
             "status": p.status.value,
             "confirmations": p.confirmations,
             "created_at": p.created_at.isoformat(),
@@ -241,53 +234,44 @@ async def webhook_stats(db: AsyncSession = Depends(get_async_db)):
 
 @router.get("/transactions", response_model=TransactionStats)
 async def transaction_stats(db: AsyncSession = Depends(get_async_db)):
-    """Blockchain transaction counts by status."""
-    rows = (await db.execute(
-        select(Transaction.status, func.count().label("cnt")).group_by(Transaction.status)
-    )).all()
-
-    tx_map = {r.status.value: r.cnt for r in rows}
-    return TransactionStats(
-        total_transactions=sum(tx_map.values()),
-        confirmed=tx_map.get("confirmed", 0),
-        pending=tx_map.get("pending", 0),
-        failed=tx_map.get("failed", 0),
-    )
+    """Payment-event counts bucketed by payment lifecycle state."""
+    return await _event_stats(db)
 
 
 @router.get("/payments/{payment_id}", response_model=PaymentDetail)
 async def get_payment_detail(payment_id: UUID, db: AsyncSession = Depends(get_async_db)):
-    """Full payment detail for admin — includes transactions and webhook attempts."""
-    result = await db.execute(select(Payment).where(Payment.id == payment_id))
-    payment = result.scalars().first()
-    if not payment:
+    """Full payment detail for admin — includes events and webhook attempts."""
+    result = await db.execute(
+        select(Payment, Chain.name, ApiKey.name)
+        .join(Chain, Payment.chain_id == Chain.id)
+        .outerjoin(ApiKey, Payment.api_key_id == ApiKey.id)
+        .where(Payment.id == payment_id)
+    )
+    row = result.first()
+    if not row:
         raise HTTPException(status_code=404, detail="Payment not found")
+    payment, chain_name, api_key_name = row
 
-    tx_rows = (await db.execute(
-        select(Transaction).where(Transaction.payment_id == payment_id)
-        .order_by(Transaction.confirmations.desc())
+    event_rows = (await db.execute(
+        select(PaymentEvent).where(PaymentEvent.payment_id == payment_id)
+        .order_by(PaymentEvent.recorded_at.desc())
     )).scalars().all()
 
     wh_rows = (await db.execute(
-        select(WebhookAttempt).where(WebhookAttempt.payment_id == str(payment_id))
+        select(WebhookAttempt).where(WebhookAttempt.payment_id == payment_id)
         .order_by(WebhookAttempt.created_at.desc())
     )).scalars().all()
 
-    
-    api_key_name = (await db.execute(
-        select(ApiKey.name).where(ApiKey.id == payment.api_key_id)
-    )).scalar()
-
     return PaymentDetail(
         id=str(payment.id),
-        chain=payment.chain,
-        api_key_name=api_key_name,
+        chain=chain_name,
+        api_key_name=api_key_name or "",
         address=payment.address,
-        amount_wei=wei_to_eth_str(payment.amount),
+        amount_wei=wei_to_eth_str(payment.amount_raw),
         status=payment.status.value,
         confirmations=payment.confirmations,
         detected_in_block=payment.detected_in_block,
-        token_contract_address=payment.token_contract_address,
+        token_contract_address=payment.token_contract,
         created_at=payment.created_at.isoformat(),
         expires_at=payment.expires_at.isoformat(),
         transactions=[
@@ -296,9 +280,9 @@ async def get_payment_detail(payment_id: UUID, db: AsyncSession = Depends(get_as
                 tx_hash=t.tx_hash,
                 block_number=t.block_number,
                 confirmations=t.confirmations,
-                status=t.status.value,
+                status=t.event_type.value,
             )
-            for t in tx_rows
+            for t in event_rows
         ],
         webhooks=[
             WebhookAttemptDetail(

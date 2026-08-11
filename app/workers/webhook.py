@@ -3,24 +3,24 @@ Worker for sending webhook notifications.
 """
 import dataclasses
 import datetime
-import json
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional
 
-from sqlalchemy import select, and_
+from sqlalchemy import and_, select
 
+from app.blockchain.chains import chain_name_for_id
+from app.core.config import settings
+from app.core.logger import logger
 from app.db.async_session import AsyncSessionLocal as async_session
 from app.db.models.payment import Payment
 from app.db.models.webhook_attempt import WebhookAttempt, WebhookAttemptStatus
 from app.services.webhook import WebhookService
-from app.core.logger import logger
-from app.core.config import settings
 
 
 @dataclasses.dataclass
 class _AttemptParams:
     """Groups webhook attempt creation parameters to stay within argument limits."""
 
-    payment_id: str
+    payment_id: Any
     event_type: str
     webhook_url: str
     payload: Dict[str, Any]
@@ -30,10 +30,10 @@ class _AttemptParams:
 async def _record_attempt(session, params: _AttemptParams) -> WebhookAttempt:
     """Create and persist a new WebhookAttempt record."""
     attempt = WebhookAttempt(
-        payment_id=str(params.payment_id),
+        payment_id=params.payment_id,
         event_type=params.event_type,
         webhook_url=params.webhook_url,
-        payload=json.dumps(params.payload),
+        payload=params.payload,
         webhook_secret=params.webhook_secret,
         status=WebhookAttemptStatus.PENDING,
     )
@@ -48,7 +48,7 @@ async def _deliver(attempt: WebhookAttempt) -> bool:
     Updates the attempt record in-place; caller must commit.
     """
     now = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
-    payload = json.loads(attempt.payload)
+    payload = attempt.payload
 
     success = await WebhookService.send_webhook(
         attempt.webhook_url, payload, attempt.webhook_secret
@@ -81,7 +81,7 @@ async def _deliver(attempt: WebhookAttempt) -> bool:
     return success
 
 
-async def send_webhook_notification(ctx, payment_id: int, event_type: str):  # pylint: disable=unused-argument
+async def send_webhook_notification(ctx, payment_id, event_type: str):  # pylint: disable=unused-argument
     """
     Send webhook notification for a payment event.
     Records the attempt and retries automatically on failure.
@@ -112,8 +112,8 @@ async def send_webhook_notification(ctx, payment_id: int, event_type: str):  # p
                 "event": event_type,
                 "payment_id": str(payment.id),
                 "address": payment.address,
-                "amount": str(payment.amount),
-                "chain": payment.chain,
+                "amount": str(payment.amount_raw),
+                "chain": chain_name_for_id(payment.chain_id),
                 "status": payment.status.value,
             }
 

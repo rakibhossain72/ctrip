@@ -1,13 +1,13 @@
 """
 ARQ client for enqueuing tasks from FastAPI endpoints.
 """
-from typing import Optional, Dict, Any
+from typing import Any, Dict, Optional
 
 from arq import create_pool
 from arq.connections import ArqRedis
 
-from app.workers import get_redis_settings
 from app.core.logger import logger
+from app.workers import get_redis_settings
 
 
 class WorkerClient:

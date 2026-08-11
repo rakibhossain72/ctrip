@@ -2,8 +2,10 @@
 Asynchronous database session management.
 """
 from typing import AsyncGenerator
+
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import sessionmaker
+
 from app.db.engine import async_engine
 
 # pylint: disable=invalid-name

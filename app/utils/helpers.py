@@ -4,6 +4,7 @@ General utility helper functions for the application.
 import datetime
 from decimal import Decimal
 
+
 def iso_date(dt: datetime.datetime) -> str:
     """Format a datetime to ISO date string (YYYY-MM-DD)."""
     return dt.strftime("%Y-%m-%d")

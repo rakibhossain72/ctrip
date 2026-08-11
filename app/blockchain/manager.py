@@ -9,8 +9,8 @@ from typing import Dict, List
 
 from web3 import AsyncWeb3
 
-from app.blockchain.client import EVMClient
 from app.blockchain.chains import load_chains
+from app.blockchain.client import EVMClient
 from app.core.logger import logger
 
 

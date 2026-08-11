@@ -1,12 +1,13 @@
+import asyncio
 from typing import Any
-from web3 import AsyncWeb3
+
+import aiohttp
 from eth_abi import decode
 from eth_utils import to_checksum_address
-import aiohttp
-import asyncio
+from web3 import AsyncWeb3
 
+from app.blockchain.ABI import get_erc20_abi, get_multicall_abi
 from app.blockchain.manager import get_w3
-from app.blockchain.ABI import get_multicall_abi, get_erc20_abi
 
 
 class Multicall:

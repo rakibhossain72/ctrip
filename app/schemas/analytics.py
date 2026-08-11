@@ -1,6 +1,5 @@
 import datetime
 from typing import List, Optional
-from uuid import UUID
 
 from pydantic import BaseModel
 
@@ -71,7 +70,6 @@ class TransactionDetail(BaseModel):
     block_number: Optional[int]
     confirmations: int
     status: str
-
 
 class WebhookAttemptDetail(BaseModel):
     id: str

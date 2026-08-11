@@ -1,29 +1,41 @@
 """
-Database models for payments and HD wallet addresses.
+Database model for payment requests and their current state.
+
+Redesigned per Phase 7 of the architecture document:
+- ``amount`` -> ``amount_raw`` (BigInteger, Wei / token base units)
+- ``chain`` removed (derivable from ``chain_id`` via the ``chains`` table)
+- ``token_contract_address`` -> ``token_contract``
+- ``chain_id`` now NOT NULL with a FK to ``chains.id``
+- ``user_id`` added (owner), plus ``detected_at`` / ``settled_at`` / ``updated_at``
+- status stored as a string column (with CHECK constraint) instead of a native enum
 """
+
+from __future__ import annotations
 
 import datetime
 import enum
 import uuid
 
 from sqlalchemy import (
-    Column,
-    String,
-    Numeric,
-    Enum,
-    Integer,
+    BigInteger,
+    CheckConstraint,
     DateTime,
     ForeignKey,
+    Index,
+    Integer,
+    String,
+    Uuid,
+    desc,
 )
-from sqlalchemy.orm import relationship
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
 from app.db.base import Base
+from app.db.models._timestamps import TimestampMixin
+from app.db.types import StringEnum
 
 
 class PaymentStatus(enum.Enum):
-    """
-    Enum for payment statuses.
-    """
+    """Enum for payment statuses — stored as string values in the DB."""
 
     PENDING = "pending"
     DETECTED = "detected"
@@ -34,37 +46,47 @@ class PaymentStatus(enum.Enum):
     FAILED = "failed"
 
 
-# pylint: disable=too-few-public-methods
-class Payment(Base):
-    """
-    Represents a payment request and its current state.
-    """
+class Payment(TimestampMixin, Base):
+    """A payment request and its lifecycle state."""
 
     __tablename__ = "payments"
-
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    token_contract_address = Column(
-        String, nullable=True
-    )  # ERC20 contract address; None = native token
-    api_key_id = Column(UUID(as_uuid=True), ForeignKey("api_keys.id"), nullable=False)
-    chain = Column(String, nullable=False)
-    chain_id = Column(Integer, nullable=True, index=True)
-    address = Column(String, nullable=False)
-    amount = Column(Numeric(precision=80, scale=0), nullable=False)
-    status = Column(
-        Enum(PaymentStatus, values_callable=lambda obj: [item.value for item in obj]),
-        default=PaymentStatus.PENDING,
-        nullable=False,
-    )
-    confirmations = Column(Integer, default=0, nullable=False)
-    detected_in_block = Column(Integer, nullable=True)
-    expires_at = Column(DateTime, nullable=False)
-    created_at = Column(
-        DateTime,
-        default=lambda: datetime.datetime.now(datetime.timezone.utc).replace(
-            tzinfo=None
+    __table_args__ = (
+        CheckConstraint(
+            "status IN ('pending', 'detected', 'confirmed', 'paid', "
+            "'expired', 'settled', 'failed')",
+            name="chk_payment_status",
         ),
-        nullable=False,
+        CheckConstraint("amount_raw > 0", name="chk_payment_amount_positive"),
+        CheckConstraint("length(address) = 42", name="chk_payment_address_length"),
+        Index("ix_payments_chain_status_expires", "chain_id", "status", "expires_at"),
+        Index("ix_payments_user_created", "user_id", desc("created_at")),
+        Index("ix_payments_api_key_created", "api_key_id", desc("created_at")),
+        Index("ix_payments_status_created", "status", "created_at"),
+        Index("ix_payments_address", "address"),
     )
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    api_key_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid, ForeignKey("api_keys.id", ondelete="RESTRICT"), nullable=False
+    )
+    chain_id: Mapped[int] = mapped_column(
+        ForeignKey("chains.id", ondelete="RESTRICT"), nullable=False
+    )
+    address: Mapped[str] = mapped_column(String(42), nullable=False)
+    amount_raw: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    token_contract: Mapped[str | None] = mapped_column(String(42), nullable=True)
+    status: Mapped[PaymentStatus] = mapped_column(
+        StringEnum(PaymentStatus), nullable=False, default=PaymentStatus.PENDING
+    )
+    confirmations: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    detected_at: Mapped[datetime.datetime | None] = mapped_column(
+        DateTime, nullable=True
+    )
+    detected_in_block: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    expires_at: Mapped[datetime.datetime] = mapped_column(DateTime, nullable=False)
+    settled_at: Mapped[datetime.datetime | None] = mapped_column(DateTime, nullable=True)
 
     api_key = relationship("ApiKey")

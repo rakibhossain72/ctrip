@@ -2,13 +2,19 @@ from __future__ import annotations
 
 import logging
 
+from app.db.models import PaymentEventType
+from scanner.db_service.events import record_event
 from scanner.db_service.payments import (
     get_pending_erc20,
     get_pending_native,
     mark_detected,
 )
-from scanner.db_service.transactions import record_transaction
-from scanner.matching import _to_hex_str, decode_erc20_transfer, match_native_tx
+from scanner.matching import (
+    _to_hex_str,
+    decode_erc20_transfer,
+    match_native_tx,
+    normalize_address,
+)
 
 logger = logging.getLogger("scanner.jobs")
 
@@ -56,14 +62,18 @@ async def process_block(
                 continue
             payment = watched[matched]
             value = int(tx.get("value") or 0)
-            if value < int(payment.amount):
+            if value < payment.amount_raw:
                 continue
-            recorded = await record_transaction(
+            recorded = await record_event(
                 db,
                 payment_id=payment.id,
+                chain_id=chain_id,
+                event_type=PaymentEventType.NATIVE,
                 tx_hash=_tx_hash(tx),
                 block_number=block_number,
                 value_raw=value,
+                from_address=normalize_address(tx.get("from") or ""),
+                to_address=matched,
             )
             if recorded and await mark_detected(db, payment.id, block_number):
                 detected += 1
@@ -123,16 +133,20 @@ async def process_log(ctx, chain_id: int, token: str, logs: list) -> None:
             payment = watched.get(event.to)
             if payment is None:
                 continue
-            if event.amount < int(payment.amount):
+            if event.amount < payment.amount_raw:
                 continue
-            recorded = await record_transaction(
+            recorded = await record_event(
                 db,
                 payment_id=payment.id,
+                chain_id=chain_id,
+                event_type=PaymentEventType.ERC20,
                 tx_hash=event.tx_hash,
                 block_number=event.block_number or 0,
                 value_raw=event.amount,
-                token_contract_address=event.token,
+                token_contract=event.token,
                 log_index=event.log_index,
+                from_address=event.from_ or "",
+                to_address=event.to,
             )
             if recorded and await mark_detected(
                 db, payment.id, event.block_number or 0

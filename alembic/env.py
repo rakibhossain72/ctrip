@@ -4,7 +4,8 @@ Alembic environment configuration.
 # pylint: disable=no-member
 import asyncio
 from logging.config import fileConfig
-from sqlalchemy import pool, engine_from_config
+
+from sqlalchemy import engine_from_config, pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
@@ -14,9 +15,9 @@ from alembic import context
 # pylint: disable=unused-import
 from app.db.base import Base
 from app.db.engine import DATABASE_URL
-from app.core.config import settings
+
 # Import all models to ensure they're registered with Base.metadata
-from app.db.models import Payment, Transaction
+from app.db.models import *  # noqa: F401,F403
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

@@ -1,17 +1,16 @@
 """
 FastAPI dependencies: app state helpers, admin JWT auth, and merchant API key auth.
 """
-import datetime
-
-from fastapi import Request, HTTPException, Security, status
+from fastapi import HTTPException, Request, Security, status
 from fastapi.security import APIKeyHeader, OAuth2PasswordBearer
 from sqlalchemy import select
 
 from app.core.security import decode_token, verify_api_key
-from app.db.models.api_key import ApiKey
 from app.db.async_session import get_async_db
-from app.wallet import WalletKeyManager
+from app.db.models.api_key import KEY_PREFIX_LENGTH, ApiKey
+from app.db.models.user import User
 from app.utils.helpers import now_utc
+from app.wallet import WalletKeyManager
 
 _oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login", auto_error=False)
 _api_key_scheme = APIKeyHeader(name="X-Api-Key", auto_error=False)
@@ -31,8 +30,8 @@ def get_arq_pool(request: Request):
     return request.app.state.arq_pool
 
 
-async def require_admin(token: str = Security(_oauth2_scheme)) -> str:
-    """Validates the Bearer JWT access token. Returns the admin username."""
+async def require_admin(token: str = Security(_oauth2_scheme)) -> User:
+    """Validates the Bearer JWT access token and returns the active User."""
     if not token:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -46,7 +45,19 @@ async def require_admin(token: str = Security(_oauth2_scheme)) -> str:
             detail="Invalid or expired access token",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    return subject
+
+    async for session in get_async_db():
+        result = await session.execute(
+            select(User).where(User.username == subject)
+        )
+        user = result.scalars().first()
+        if not user or not user.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User not found or inactive",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        return user
 
 
 async def require_api_key(key: str = Security(_api_key_scheme)) -> ApiKey:
@@ -59,7 +70,7 @@ async def require_api_key(key: str = Security(_api_key_scheme)) -> ApiKey:
             headers={"WWW-Authenticate": "ApiKey"},
         )
 
-    prefix = key[:8]
+    prefix = key[:KEY_PREFIX_LENGTH]
 
     async for session in get_async_db():
         result = await session.execute(
@@ -69,7 +80,7 @@ async def require_api_key(key: str = Security(_api_key_scheme)) -> ApiKey:
 
         matched: ApiKey | None = None
         for candidate in candidates:
-            if verify_api_key(key, candidate.hashed_key):
+            if verify_api_key(key, candidate.key_hash):
                 matched = candidate
                 break
 
@@ -79,7 +90,9 @@ async def require_api_key(key: str = Security(_api_key_scheme)) -> ApiKey:
         if not matched.is_active:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="API key has been revoked")
 
-        matched.last_used_at = now_utc()
-        await session.commit()
+        # Lazy last_used_at — throttled to avoid write amplification (M5).
+        if matched.should_refresh_last_used(now_utc()):
+            matched.last_used_at = now_utc()
+            await session.commit()
 
         return matched

@@ -2,7 +2,9 @@
 Synchronous database session management.
 """
 from typing import Generator
-from sqlalchemy.orm import sessionmaker, Session
+
+from sqlalchemy.orm import Session, sessionmaker
+
 from app.db.engine import engine
 
 # pylint: disable=invalid-name

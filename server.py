@@ -5,23 +5,21 @@ Main entry point for the FastAPI application.
 from contextlib import asynccontextmanager
 from typing import AsyncIterator
 
+from arq import create_pool
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from arq import create_pool
-
-from app.api.health import health_router
-from app.api.v1.payments import router as payments_router
 from app.api.admin import router as admin_router
 from app.api.analytics import router as analytics_router
 from app.api.auth import router as auth_router
+from app.api.health import health_router
 from app.api.ui import router as ui_router
-
-from app.wallet import WalletKeyManager
+from app.api.v1.payments import router as payments_router
 from app.blockchain.manager import get_blockchains
+from app.core.config import settings
 from app.db.async_session import AsyncSessionLocal
 from app.db.seed import seed_default_admin
-from app.core.config import settings
+from app.wallet import WalletKeyManager
 from app.workers import get_redis_settings
 
 

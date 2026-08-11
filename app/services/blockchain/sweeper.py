@@ -1,12 +1,15 @@
 """
 Service for sweeping confirmed payments to an admin wallet.
 """
-from eth_account import Account
-from sqlalchemy import select, and_
-from app.db.models.payment import Payment
-from app.core.config import settings
+import datetime
 
+from eth_account import Account
+from sqlalchemy import and_, select
+
+from app.core.config import settings
 from app.core.logger import logger
+from app.db.models.payment import Payment, PaymentStatus
+from scanner.db_service.state_changes import record_state_changes
 
 
 # pylint: disable=too-few-public-methods
@@ -19,9 +22,9 @@ class SweeperService:
         self.hd_wallet_manager = hd_wallet_manager
 
     # pylint: disable=unused-argument
-    async def sweep_confirmed_payments(self, chain_name: str):
+    async def sweep_confirmed_payments(self, chain_id: int):
         """Find and sweep all confirmed payments for a specific chain."""
-        logger.info("Starting sweep for chain: %s", chain_name)
+        logger.info("Starting sweep for chain: %s", chain_id)
 
         # Get admin wallet address (from mnemonic or private key)
         # pylint: disable=no-value-for-parameter,no-member
@@ -31,12 +34,12 @@ class SweeperService:
         # Get confirmed payments that are not yet settled
         payments_res = await self.session.execute(
             select(Payment)
-            .where(and_(Payment.status == "confirmed", Payment.chain == chain_name))
+            .where(and_(Payment.status == PaymentStatus.CONFIRMED, Payment.chain_id == chain_id))
         )
         confirmed_payments = list(payments_res.scalars())
 
         if not confirmed_payments:
-            logger.info("No confirmed payments to sweep on %s", chain_name)
+            logger.info("No confirmed payments to sweep on %s", chain_id)
             return
 
         for payment in confirmed_payments:
@@ -56,9 +59,18 @@ class SweeperService:
 
                 # Placeholder for actual transaction sending logic
                 # For now, just mark as settled
-                payment.status = "settled"
+                payment.status = PaymentStatus.SETTLED
+                payment.settled_at = datetime.datetime.now(
+                    datetime.timezone.utc
+                ).replace(tzinfo=None)
 
             except Exception as e:  # pylint: disable=broad-exception-caught
                 logger.error("Failed to sweep payment %s: %s", payment.id, e)
 
+        record_state_changes(
+            self.session,
+            payment_ids=[p.id for p in confirmed_payments],
+            from_status="confirmed",
+            to_status="settled",
+        )
         await self.session.commit()

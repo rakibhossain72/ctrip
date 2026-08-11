@@ -1,4 +1,5 @@
 import asyncio
+
 from scanner.blockchain_service import BlockchainService
 from scanner.constants import ERC20_TRANSFER_TOPIC
 

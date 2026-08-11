@@ -8,6 +8,7 @@ Usage:
 import asyncio
 
 from arq import run_worker
+
 from app.workers.worker import WorkerSettings
 
 if __name__ == '__main__':

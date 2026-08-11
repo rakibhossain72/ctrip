@@ -1,7 +1,7 @@
-from typing import Any, Dict, List, Union
 import json
 import pathlib
 from functools import lru_cache
+from typing import Any, Dict, List, Union
 
 
 def _open_file(filename: str) -> Any:

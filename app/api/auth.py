@@ -1,16 +1,16 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import (
-    verify_password,
     create_access_token,
     create_refresh_token,
     decode_token,
+    verify_password,
 )
 from app.db.async_session import get_async_db
-from app.db.models.admin_user import AdminUser
-from app.schemas.auth import LoginRequest, TokenResponse, RefreshRequest
+from app.db.models.user import User
+from app.schemas.auth import LoginRequest, RefreshRequest, TokenResponse
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -19,7 +19,7 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 async def login(body: LoginRequest, db: AsyncSession = Depends(get_async_db)):
     """Authenticate and receive access + refresh tokens."""
     result = await db.execute(
-        select(AdminUser).where(AdminUser.username == body.username, AdminUser.is_active == True)
+        select(User).where(User.username == body.username, User.is_active)
     )
     user = result.scalars().first()
 

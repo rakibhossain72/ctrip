@@ -26,7 +26,7 @@ from web3.utils.subscriptions import (
 )
 
 from app.core.logger import logger
-from app.schemas.blockchain import RPCEndpoint, ProviderType
+from app.schemas.blockchain import ProviderType, RPCEndpoint
 
 
 class RotatingRPCManager:

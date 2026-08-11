@@ -1,25 +1,26 @@
+from datetime import datetime, timezone
 from typing import List
 from uuid import UUID
-from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import require_admin
 from app.core.security import generate_api_key
 from app.db.async_session import get_async_db
 from app.db.models.api_key import ApiKey
-from app.workers.client import get_worker_client, WorkerClient
+from app.db.models.user import User
 from app.schemas.admin import (
-    SweepAddressRequest,
-    ProcessPaymentRequest,
-    CustomWebhookRequest,
-    JobResponse,
+    ApiKeyCreatedResponse,
     ApiKeyCreateRequest,
     ApiKeyResponse,
-    ApiKeyCreatedResponse,
+    CustomWebhookRequest,
+    JobResponse,
+    ProcessPaymentRequest,
+    SweepAddressRequest,
 )
+from app.workers.client import WorkerClient, get_worker_client
 
 router = APIRouter(
     prefix="/admin", tags=["admin"], dependencies=[Depends(require_admin)]
@@ -131,15 +132,18 @@ async def send_custom_webhook(
     status_code=status.HTTP_201_CREATED,
 )
 async def create_api_key(
-    body: ApiKeyCreateRequest, db: AsyncSession = Depends(get_async_db)
+    body: ApiKeyCreateRequest,
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = Depends(require_admin),
 ):
     """Generate a new API key. The raw key is returned only once."""
     raw_key, prefix, hashed_key = generate_api_key()
 
     db_key = ApiKey(
         name=body.name,
+        user_id=current_user.id,
         key_prefix=prefix,
-        hashed_key=hashed_key,
+        key_hash=hashed_key,
         created_at=datetime.now(timezone.utc).replace(tzinfo=None),
     )
     db.add(db_key)
@@ -158,9 +162,15 @@ async def create_api_key(
 
 
 @router.get("/api-keys", response_model=List[ApiKeyResponse])
-async def list_api_keys(db: AsyncSession = Depends(get_async_db)):
-    """Return all API keys (active and revoked). Raw keys are never returned."""
-    result = await db.execute(select(ApiKey).order_by(ApiKey.created_at.desc()))
+async def list_api_keys(
+    limit: int = Query(default=100, ge=1, le=1000),
+    offset: int = Query(default=0, ge=0),
+    db: AsyncSession = Depends(get_async_db),
+):
+    """Return API keys (active and revoked) with pagination. Raw keys are never returned."""
+    result = await db.execute(
+        select(ApiKey).order_by(ApiKey.created_at.desc()).offset(offset).limit(limit)
+    )
     return result.scalars().all()
 
 

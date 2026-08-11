@@ -1,5 +1,5 @@
 import datetime
-from typing import Optional, Dict, Any
+from typing import Any, Dict, Optional
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -11,7 +11,7 @@ class SweepAddressRequest(BaseModel):
 
 
 class ProcessPaymentRequest(BaseModel):
-    payment_id: int
+    payment_id: UUID
     chain_name: str
 
 

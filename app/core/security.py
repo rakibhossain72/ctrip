@@ -1,17 +1,15 @@
 """
 Security utilities: password hashing, JWT creation/verification, API key management.
 """
+import datetime
 import hashlib
 import secrets
-import datetime
 from typing import Optional
 
+import bcrypt
 from jose import JWTError, jwt
 
 from app.core.config import settings
-
-import bcrypt
-
 from app.utils.helpers import now_utc
 
 ALGORITHM = "HS256"
@@ -70,7 +68,7 @@ def generate_api_key() -> tuple[str, str, str]:
     The raw key is shown once; only the hash is stored.
     """
     raw_key = f"ck_{secrets.token_urlsafe(32)}"
-    prefix = raw_key[:8]
+    prefix = raw_key[:12]
     hashed_key = hashlib.sha256(raw_key.encode()).hexdigest()
     return raw_key, prefix, hashed_key
 

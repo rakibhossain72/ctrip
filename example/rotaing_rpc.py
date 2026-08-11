@@ -1,7 +1,9 @@
 import asyncio
 import logging
+
 from app.blockchain.rpc_manager.rotating_rpc import RotatingRPCManager, RPCEndpoint
 from app.schemas.blockchain import ProviderType
+
 
 #  Example
 async def main():

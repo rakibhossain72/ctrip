@@ -2,11 +2,11 @@
 Configuration management for the application using Pydantic Settings.
 """
 import os
-from typing import List, Optional, Literal
+from typing import List, Literal, Optional
 
 import yaml
 from eth_account import Account
-from pydantic import Field, SecretStr, field_validator, computed_field
+from pydantic import Field, SecretStr, computed_field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 

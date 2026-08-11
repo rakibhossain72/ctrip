@@ -27,8 +27,8 @@ from eth_account import Account
 from web3 import AsyncWeb3
 
 from app.blockchain.ABI import get_erc20_abi
-from app.core.logger import logger
 from app.blockchain.w3 import make_w3
+from app.core.logger import logger
 
 
 class EVMClient:

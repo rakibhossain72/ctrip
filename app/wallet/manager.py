@@ -1,12 +1,12 @@
 import hashlib
 import hmac
 import secrets
-
 from typing import Optional
 
 from eth_account import Account
 from eth_account.messages import encode_defunct
 from eth_account.signers.local import LocalAccount
+
 from app.schemas.wallet import DerivedWallet, SignedMessage
 
 
