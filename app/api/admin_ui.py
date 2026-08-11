@@ -26,6 +26,7 @@ from app.api.dependencies import (
     get_current_admin_web,
 )
 from app.api.templates import templates
+from app.blockchain.chains import load_chains
 from app.core.config import settings
 from app.core.security import create_access_token, verify_password
 from app.db.async_session import get_async_db
@@ -40,7 +41,8 @@ SESSION_MAX_AGE = 30 * 60
 # Flash cookie survives exactly one redirect.
 FLASH_MAX_AGE = 60
 
-CHAIN_NAMES = ["ethereum", "bsc", "polygon"]
+# Chain names come from the chains.yaml configuration, not a hardcoded list.
+CHAIN_NAMES = [c.name for c in load_chains()]
 WEBHOOK_EVENTS = ["payment.confirmed", "payment.expired", "payment.swept"]
 
 

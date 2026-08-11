@@ -20,14 +20,17 @@ Options (override via env vars or command-line flags):
   ADMIN_PASSWORD    Admin password       (default: admin123)
   SENDER_KEY        Sender private key   (default: first Anvil test key)
   PAYMENT_AMOUNT    Amount in wei        (default: 100_000_000_000_000_000 = 0.1 ETH)
-  PAYMENT_CHAIN     Chain name           (default: anvil)
+  PAYMENT_CHAIN_ID  Chain identifier     (default: 31337 = anvil)
 
 
-# default — login as admin/admin123, create key, pay 0.1 ETH on anvil
+# default — login as admin/admin123, create key, pay 0.1 ETH on anvil (chain_id 31337)
 python example/create_payment.py
 
 # point at a remote server
 python example/create_payment.py --base-url https://api.example.com --username admin --password s3cr3t
+
+# pay on sepolia (chain_id 11155111)
+python example/create_payment.py --chain-id 11155111 --rpc-url https://eth-sepolia.api.onfinality.io/public
 
 # ERC-20 payment
 python example/create_payment.py --token 0xContractAddress --amount 1000000
@@ -47,9 +50,9 @@ import requests
 import web3 as Web3Module
 from web3 import Web3
 
-# 
+#
 # Defaults
-# 
+#
 
 DEFAULTS = {
     "base_url":   os.getenv("BASE_URL",         "http://127.0.0.1:8000"),
@@ -61,13 +64,13 @@ DEFAULTS = {
         # Default Anvil/Hardhat test account #0 — never use in production
         "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
     ),
-    "amount":     int(os.getenv("PAYMENT_AMOUNT", 100_000_000_000_000_000)),  # 0.1 ETH
-    "chain":      os.getenv("PAYMENT_CHAIN",     "anvil"),
+    "amount":     int(os.getenv("PAYMENT_AMOUNT", 0.0001 * 1e18)),  # 0.0001 ETH
+    "chain_id":   int(os.getenv("PAYMENT_CHAIN_ID", 31_337)),  # 31337 = anvil
 }
 
-# 
+#
 # Formatting helpers
-# 
+#
 
 GREEN  = "\033[92m"
 YELLOW = "\033[93m"
@@ -94,9 +97,9 @@ def die(msg: str, code: int = 1) -> None:
     sys.exit(code)
 
 
-# 
+#
 # HTTP helpers
-# 
+#
 
 SESSION = requests.Session()
 SESSION.headers.update({"Content-Type": "application/json", "Accept": "application/json"})
@@ -124,9 +127,9 @@ def get(url: str, *, headers: dict | None = None, label: str = "GET") -> dict:
     return r.json()
 
 
-# 
+#
 # Step 1 — Login
-# 
+#
 
 def login(base_url: str, username: str, password: str) -> str:
     """POST /auth/login -> return access token."""
@@ -147,9 +150,9 @@ def login(base_url: str, username: str, password: str) -> str:
     return token
 
 
-# 
+#
 # Step 2 — Create API key
-# 
+#
 
 def create_api_key(base_url: str, access_token: str, key_name: str = "example-script") -> str:
     """POST /admin/api-keys -> return raw API key."""
@@ -173,26 +176,32 @@ def create_api_key(base_url: str, access_token: str, key_name: str = "example-sc
     return raw_key
 
 
-# 
+#
 # Step 3 — Create payment
-# 
+#
 
 def create_payment(
     base_url: str,
     api_key: str,
-    chain: str,
+    chain_id: int,
     amount: int,
     token_contract_address: str | None = None,
 ) -> dict:
     """POST /api/v1/payments/ -> return payment record."""
     step(3, "Create payment")
 
-    payload: dict = {"chain": chain, "amount": amount}
+    payload: dict = {"chain_id": chain_id, "amount": amount}
     if token_contract_address:
         payload["token_contract_address"] = token_contract_address
-        info(f"ERC-20 payment  token={token_contract_address}  amount={amount}")
+        info(
+            f"ERC-20 payment  chain_id={chain_id}  "
+            f"token={token_contract_address}  amount={amount}"
+        )
     else:
-        info(f"Native payment  chain={chain}  amount={amount} wei ({amount / 1e18:.6f} ETH)")
+        info(
+            f"Native payment  chain_id={chain_id}  "
+            f"amount={amount} wei ({amount / 1e18:.6f} ETH)"
+        )
 
     data = post(
         f"{base_url}/api/v1/payments/",
@@ -207,9 +216,9 @@ def create_payment(
     return data
 
 
-# 
+#
 # Step 4 — Send on-chain transaction
-# 
+#
 
 def send_transaction(rpc_url: str, sender_key: str, to_address: str, value_wei: int) -> str:
     """Sign and broadcast a native ETH transfer; returns the tx hash."""
@@ -245,9 +254,9 @@ def send_transaction(rpc_url: str, sender_key: str, to_address: str, value_wei: 
     return hex_hash
 
 
-# 
+#
 # Step 5 — Poll payment status
-# 
+#
 
 def poll_payment(
     base_url: str,
@@ -288,9 +297,9 @@ def poll_payment(
     return {}
 
 
-# 
+#
 # CLI argument parsing
-# 
+#
 
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(
@@ -303,7 +312,8 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--password",    default=DEFAULTS["password"],     help="Admin password")
     p.add_argument("--sender-key",  default=DEFAULTS["sender_key"],  help="Sender private key (hex)")
     p.add_argument("--amount",      default=DEFAULTS["amount"],      type=int, help="Payment amount in wei")
-    p.add_argument("--chain",       default=DEFAULTS["chain"],       help="Chain name")
+    p.add_argument("--chain-id",    default=DEFAULTS["chain_id"],    type=int,
+                   help="Blockchain identifier (31337 anvil, 11155111 sepolia)")
     p.add_argument("--token",       default=None,                    help="ERC-20 contract address (omit for native)")
     p.add_argument("--key-name",    default="example-script",        help="Label for the generated API key")
     p.add_argument("--no-tx",       action="store_true",             help="Skip sending the on-chain transaction")
@@ -311,9 +321,9 @@ def parse_args() -> argparse.Namespace:
     return p.parse_args()
 
 
-# 
+#
 # Main
-# 
+#
 
 def main() -> None:
     args = parse_args()
@@ -323,7 +333,7 @@ def main() -> None:
     print(f"{'─' * 60}{RESET}")
     print(f"  API:   {args.base_url}")
     print(f"  RPC:   {args.rpc_url}")
-    print(f"  Chain: {args.chain}")
+    print(f"  Chain: {args.chain_id}")
     print(f"  Amount:{args.amount} wei ({args.amount / 1e18:.6f} ETH)")
     if args.token:
         print(f"  Token: {args.token}")
@@ -339,7 +349,7 @@ def main() -> None:
     payment = create_payment(
         args.base_url,
         api_key,
-        chain=args.chain,
+        chain_id=args.chain_id,
         amount=args.amount,
         token_contract_address=args.token,
     )
