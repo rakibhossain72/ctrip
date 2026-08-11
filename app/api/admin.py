@@ -1,15 +1,11 @@
-from datetime import datetime, timezone
 from typing import List
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import require_admin
-from app.core.security import generate_api_key
 from app.db.async_session import get_async_db
-from app.db.models.api_key import ApiKey
 from app.db.models.user import User
 from app.schemas.admin import (
     ApiKeyCreatedResponse,
@@ -20,6 +16,7 @@ from app.schemas.admin import (
     ProcessPaymentRequest,
     SweepAddressRequest,
 )
+from app.services import admin_data
 from app.workers.client import WorkerClient, get_worker_client
 
 router = APIRouter(
@@ -137,18 +134,7 @@ async def create_api_key(
     current_user: User = Depends(require_admin),
 ):
     """Generate a new API key. The raw key is returned only once."""
-    raw_key, prefix, hashed_key = generate_api_key()
-
-    db_key = ApiKey(
-        name=body.name,
-        user_id=current_user.id,
-        key_prefix=prefix,
-        key_hash=hashed_key,
-        created_at=datetime.now(timezone.utc).replace(tzinfo=None),
-    )
-    db.add(db_key)
-    await db.commit()
-    await db.refresh(db_key)
+    db_key, raw_key = await admin_data.create_api_key(db, current_user, body.name)
 
     return ApiKeyCreatedResponse(
         id=db_key.id,
@@ -168,20 +154,10 @@ async def list_api_keys(
     db: AsyncSession = Depends(get_async_db),
 ):
     """Return API keys (active and revoked) with pagination. Raw keys are never returned."""
-    result = await db.execute(
-        select(ApiKey).order_by(ApiKey.created_at.desc()).offset(offset).limit(limit)
-    )
-    return result.scalars().all()
+    return await admin_data.list_api_keys(db, limit=limit, offset=offset)
 
 
 @router.delete("/api-keys/{key_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def revoke_api_key(key_id: UUID, db: AsyncSession = Depends(get_async_db)):
     """Deactivate an API key."""
-    result = await db.execute(select(ApiKey).where(ApiKey.id == key_id))
-    db_key = result.scalars().first()
-    if not db_key:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="API key not found"
-        )
-    db_key.is_active = False
-    await db.commit()
+    await admin_data.revoke_api_key(db, key_id)

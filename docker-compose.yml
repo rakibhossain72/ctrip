@@ -38,6 +38,8 @@ services:
       timeout: 3s
       retries: 20
       start_period: 15s
+    ports:
+      - "8000:8000"
     expose:
       - "8000"
 
@@ -60,30 +62,5 @@ services:
       - redis
     restart: unless-stopped
 
-  frontend:
-    build: ./admin-frontend
-    env_file: .env
-    environment:
-      VITE_API_URL: /api
-    command: sh -c "pnpm install && pnpm build"
-    volumes:
-      - frontend_dist:/app/dist
-    restart: "no"
-
-  nginx:
-    image: nginx:alpine
-    ports:
-      - "80:80"
-    depends_on:
-      app:
-        condition: service_healthy
-      frontend:
-        condition: service_completed_successfully
-    volumes:
-      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
-      - frontend_dist:/usr/share/nginx/html
-    restart: unless-stopped
-
 volumes:
   postgres_data:
-  frontend_dist:

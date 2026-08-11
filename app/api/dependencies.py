@@ -15,6 +15,10 @@ from app.wallet import WalletKeyManager
 _oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login", auto_error=False)
 _api_key_scheme = APIKeyHeader(name="X-Api-Key", auto_error=False)
 
+# HTTP-only cookie used by the server-rendered admin console pages.
+ADMIN_SESSION_COOKIE = "ctrip_admin_session"
+ADMIN_FLASH_COOKIE = "ctrip_admin_flash"
+
 
 def get_blockchains(request: Request):
     """Dependency to access initialized blockchains from app state."""
@@ -58,6 +62,32 @@ async def require_admin(token: str = Security(_oauth2_scheme)) -> User:
                 headers={"WWW-Authenticate": "Bearer"},
             )
         return user
+
+
+async def get_current_admin_web(request: Request) -> User | None:
+    """Resolve the admin console session from the HTTP-only cookie.
+
+    Returns the active admin User, or ``None`` when the cookie is missing,
+    invalid, or the account is disabled. The web pages use this to decide
+    whether to render or redirect to the login page.
+    """
+    token = request.cookies.get(ADMIN_SESSION_COOKIE)
+    if not token:
+        return None
+
+    subject = decode_token(token, expected_type="access")
+    if not subject:
+        return None
+
+    async for session in get_async_db():
+        result = await session.execute(
+            select(User).where(User.username == subject)
+        )
+        user = result.scalars().first()
+        if not user or not user.is_active:
+            return None
+        return user
+    return None
 
 
 async def require_api_key(key: str = Security(_api_key_scheme)) -> ApiKey:

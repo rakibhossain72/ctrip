@@ -1,0 +1,91 @@
+{% extends "admin/_layout.html" %}
+{% block page_title %}API Keys{% endblock %}
+{% block topbar_title %}API Keys{% endblock %}
+
+{% block page_content %}
+<div class="page-header flex justify-between items-center">
+  <div>
+    <h1>API Keys</h1>
+    <p>Manage merchant API keys for payment creation.</p>
+  </div>
+  <button class="btn btn-primary" onclick="openCreateKeyModal()">+ Create Key</button>
+</div>
+
+<div class="card">
+  {% if keys %}
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Prefix</th>
+          <th>Status</th>
+          <th>Created</th>
+          <th>Last Used</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for k in keys %}
+        <tr>
+          <td class="font-medium">{{ k.name }}</td>
+          <td><code class="font-mono text-sm">{{ k.key_prefix }}…</code></td>
+          <td>
+            {% if k.is_active %}
+            <span class="badge badge-success">Active</span>
+            {% else %}
+            <span class="badge badge-destructive">Revoked</span>
+            {% endif %}
+          </td>
+          <td class="text-xs text-muted">{{ k.created_at | fmt_dt_full if k.created_at else '—' }}</td>
+          <td class="text-xs text-muted">{{ k.last_used_at | fmt_dt_full if k.last_used_at else '—' }}</td>
+          <td>
+            {% if k.is_active %}
+            <form method="post" action="/admin/actions/apikeys/{{ k.id }}/revoke" onsubmit="return confirm('Revoke this API key? This cannot be undone.')">
+              <input type="hidden" name="next" value="/admin/apikeys" />
+              <button type="submit" class="btn btn-outline btn-sm">Revoke</button>
+            </form>
+            {% else %}
+            —
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty-state">No API keys found.</div>
+  {% endif %}
+</div>
+
+<div id="createKeyModal" class="modal-overlay">
+  <div class="modal">
+    <h3>Create API Key</h3>
+    <p>Give this key a name to identify it later.</p>
+    <form method="post" action="/admin/actions/apikeys/create">
+      <input type="hidden" name="next" value="/admin/apikeys" />
+      <div class="form-group mb-4">
+        <label class="label" for="newKeyName">Key Name</label>
+        <input class="input" type="text" id="newKeyName" name="name" placeholder="e.g. Production Key" required autofocus />
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-outline" onclick="closeCreateKeyModal()">Cancel</button>
+        <button type="submit" class="btn btn-primary">Create</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block page_scripts %}
+<script>
+  function openCreateKeyModal() {
+    document.getElementById('createKeyModal').classList.add('show');
+    document.getElementById('newKeyName').focus();
+  }
+  function closeCreateKeyModal() {
+    document.getElementById('createKeyModal').classList.remove('show');
+  }
+</script>
+{% endblock %}

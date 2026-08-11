@@ -2,16 +2,15 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import HTMLResponse
-from fastapi.templating import Jinja2Templates
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.templates import templates
 from app.db.async_session import get_async_db
 from app.db.models.payment import Payment
 from app.schemas.payment import PaymentRead, PaymentResponse
 
 router = APIRouter(tags=["ui"])
-templates = Jinja2Templates(directory="app/templates")
 
 
 @router.get("/payment/{payment_id}", response_class=HTMLResponse)

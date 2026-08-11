@@ -1,0 +1,220 @@
+{% extends "base.html" %}
+{% block title %}{% block page_title %}{% endblock %} — Ctrip Admin{% endblock %}
+
+{% block head %}
+<style>
+  body { display: flex; height: 100vh; overflow: hidden; background: var(--muted); }
+
+  .sidebar {
+    width: var(--sidebar-width);
+    background: var(--card);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+  }
+  .sidebar-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .sidebar-logo {
+    width: 32px; height: 32px;
+    background: var(--primary);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--primary-foreground);
+    font-weight: 700;
+    font-size: 0.875rem;
+    flex-shrink: 0;
+  }
+  .sidebar-title { font-weight: 600; font-size: 0.9375rem; }
+  .sidebar-subtitle { font-size: 0.75rem; color: var(--muted-foreground); }
+
+  .sidebar-nav { flex: 1; padding: 12px 8px; overflow-y: auto; }
+
+  .nav-section-label {
+    padding: 6px 12px 4px;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    color: var(--muted-foreground);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-top: 8px;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    border-radius: var(--radius);
+    cursor: pointer;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--muted-foreground);
+    border: none;
+    background: none;
+    width: 100%;
+    text-align: left;
+    transition: background 0.1s, color 0.1s;
+    text-decoration: none;
+    font-family: inherit;
+    margin-bottom: 2px;
+  }
+  .nav-item:hover { background: var(--accent); color: var(--foreground); }
+  .nav-item.active { background: var(--accent); color: var(--foreground); font-weight: 600; }
+  .nav-item .icon { font-size: 1rem; width: 20px; text-align: center; flex-shrink: 0; }
+
+  .sidebar-footer {
+    padding: 12px 8px;
+    border-top: 1px solid var(--border);
+  }
+
+  .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+  .topbar {
+    height: 57px;
+    background: var(--card);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+    flex-shrink: 0;
+  }
+  .topbar-title { font-weight: 600; font-size: 0.9375rem; }
+
+  .content { flex: 1; overflow-y: auto; padding: 24px; }
+
+  .page-header { margin-bottom: 24px; }
+  .page-header h1 { font-size: 1.25rem; }
+  .page-header p { font-size: 0.875rem; color: var(--muted-foreground); margin-top: 2px; }
+
+  /* Modal (raw key) */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.4);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+  }
+  .modal-overlay.show { display: flex; }
+  .modal {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: calc(var(--radius) + 4px);
+    padding: 28px;
+    width: 100%;
+    max-width: 440px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+  }
+  .modal h3 { margin-bottom: 8px; }
+  .modal p { font-size: 0.875rem; margin-bottom: 16px; }
+  .key-display {
+    background: var(--muted);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px 14px;
+    font-family: monospace;
+    font-size: 0.8125rem;
+    word-break: break-all;
+    margin-bottom: 16px;
+    color: var(--foreground);
+  }
+  .modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
+
+  /* Stat cards */
+  .stat-card { padding: 20px 24px; }
+  .stat-label { font-size: 0.8125rem; font-weight: 500; color: var(--muted-foreground); margin-bottom: 8px; }
+  .stat-value { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; }
+  .stat-sub { font-size: 0.8125rem; color: var(--muted-foreground); margin-top: 4px; }
+  {% block extra_css %}{% endblock %}
+</style>
+{% endblock %}
+
+{% block body %}
+<aside class="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-logo">C</div>
+    <div>
+      <div class="sidebar-title">Ctrip</div>
+      <div class="sidebar-subtitle">Admin Panel</div>
+    </div>
+  </div>
+
+  <nav class="sidebar-nav">
+    <div class="nav-section-label">Overview</div>
+    <a class="nav-item {{ 'active' if active_section == 'overview' }}" href="/admin/overview">
+      <span class="icon">◈</span> Dashboard
+    </a>
+    <a class="nav-item {{ 'active' if active_section == 'payments' }}" href="/admin/payments">
+      <span class="icon">⟳</span> Payments
+    </a>
+    <a class="nav-item {{ 'active' if active_section == 'analytics' }}" href="/admin/analytics">
+      <span class="icon">▦</span> Analytics
+    </a>
+
+    <div class="nav-section-label">Management</div>
+    <a class="nav-item {{ 'active' if active_section == 'apikeys' }}" href="/admin/apikeys">
+      <span class="icon">⚿</span> API Keys
+    </a>
+    <a class="nav-item {{ 'active' if active_section == 'ops' }}" href="/admin/ops">
+      <span class="icon">⚙</span> Operations
+    </a>
+  </nav>
+
+  <div class="sidebar-footer">
+    <form method="post" action="/admin/logout" style="width:100%">
+      <button type="submit" class="nav-item btn-ghost" style="width:100%; color: var(--destructive);">
+        <span class="icon">⏻</span> Sign Out
+      </button>
+    </form>
+  </div>
+</aside>
+
+<div class="main">
+  <header class="topbar">
+    <span class="topbar-title">{% block topbar_title %}{% endblock %}</span>
+    <span class="text-sm text-muted">{{ user.username if user else '' }}</span>
+  </header>
+
+  <div class="content">
+    {% block page_content %}{% endblock %}
+  </div>
+</div>
+
+<!-- Raw key modal -->
+<div id="rawKeyModal" class="modal-overlay">
+  <div class="modal">
+    <h3>API Key Created</h3>
+    <p>Copy this key now. It will <strong>not</strong> be shown again.</p>
+    <div class="key-display" id="rawKeyDisplay"></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="copyRawKey()">Copy Key</button>
+      <button class="btn btn-primary" onclick="closeRawKeyModal()">Done</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{% if flash %}
+<script>
+  window.addEventListener('DOMContentLoaded', function () {
+    {% if flash.type == 'raw_key' %}
+      document.getElementById('rawKeyDisplay').textContent = {{ flash.message | tojson }};
+      document.getElementById('rawKeyModal').classList.add('show');
+    {% else %}
+      showToast({{ flash.message | tojson }}, {{ 'success' if flash.type == 'ok' else 'error' }});
+    {% endif %}
+  });
+</script>
+{% endif %}
+{% block page_scripts %}{% endblock %}
+{% endblock %}

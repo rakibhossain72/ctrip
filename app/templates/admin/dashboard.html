@@ -1,0 +1,144 @@
+{% extends "admin/_layout.html" %}
+{% block page_title %}Dashboard{% endblock %}
+{% block topbar_title %}Dashboard{% endblock %}
+
+{% block page_content %}
+<div class="page-header">
+  <h1>Dashboard</h1>
+  <p>Your payment gateway at a glance.</p>
+</div>
+
+<div class="grid grid-4 mb-6">
+  <div class="card stat-card">
+    <div class="stat-label">Total Payments</div>
+    <div class="stat-value">{{ summary.payments.total_payments | fmt_int }}</div>
+    <div class="stat-sub">All time</div>
+  </div>
+  <div class="card stat-card">
+    <div class="stat-label">Total Volume</div>
+    <div class="stat-value">{{ summary.payments.total_volume_wei }}</div>
+    <div class="stat-sub">All chains</div>
+  </div>
+  <div class="card stat-card">
+    <div class="stat-label">Confirmed Volume</div>
+    <div class="stat-value">{{ summary.payments.confirmed_volume_wei }}</div>
+    <div class="stat-sub">Paid + Settled</div>
+  </div>
+  <div class="card stat-card">
+    <div class="stat-label">Active API Keys</div>
+    <div class="stat-value">{{ summary.api_keys.active_keys | fmt_int }}</div>
+    <div class="stat-sub">of {{ summary.api_keys.total_keys | fmt_int }} total</div>
+  </div>
+</div>
+
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px;">
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <div class="card-title">Webhook Health</div>
+        <div class="card-description">Delivery success rate</div>
+      </div>
+      <span class="badge {{ 'badge-success' if webhook_rate >= 90 else ('badge-warning' if webhook_rate >= 60 else 'badge-destructive') }}">{{ '%.1f' % webhook_rate }}% success</span>
+    </div>
+    <div class="card-content">
+      <div class="grid grid-3">
+        <div>
+          <div class="stat-label">Total</div>
+          <div style="font-size:1.25rem;font-weight:600">{{ summary.webhooks.total_attempts | fmt_int }}</div>
+        </div>
+        <div>
+          <div class="stat-label">Successful</div>
+          <div style="font-size:1.25rem;font-weight:600">{{ summary.webhooks.successful | fmt_int }}</div>
+        </div>
+        <div>
+          <div class="stat-label">Failed</div>
+          <div style="font-size:1.25rem;font-weight:600">{{ summary.webhooks.failed | fmt_int }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <div class="card-title">Transactions</div>
+        <div class="card-description">On-chain status breakdown</div>
+      </div>
+    </div>
+    <div class="card-content">
+      <div class="grid grid-3">
+        <div>
+          <div class="stat-label">Total</div>
+          <div style="font-size:1.25rem;font-weight:600">{{ summary.transactions.total_transactions | fmt_int }}</div>
+        </div>
+        <div>
+          <div class="stat-label">Confirmed</div>
+          <div style="font-size:1.25rem;font-weight:600">{{ summary.transactions.confirmed | fmt_int }}</div>
+        </div>
+        <div>
+          <div class="stat-label">Pending</div>
+          <div style="font-size:1.25rem;font-weight:600">{{ summary.transactions.pending | fmt_int }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card mb-6">
+  <div class="card-header">
+    <div>
+      <div class="card-title">Quick Actions</div>
+      <div class="card-description">Manually trigger background tasks</div>
+    </div>
+  </div>
+  <div class="card-content flex gap-3">
+    <form method="post" action="/admin/actions/scan-now">
+      <button type="submit" class="btn btn-secondary">⟳ &nbsp;Trigger Payment Scan</button>
+    </form>
+    <form method="post" action="/admin/actions/sweep-now">
+      <button type="submit" class="btn btn-secondary">↑ &nbsp;Trigger Global Sweep</button>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <div>
+      <div class="card-title">Recent Payments</div>
+      <div class="card-description">Latest payment requests</div>
+    </div>
+    <a href="/admin/payments" class="btn btn-outline btn-sm">View all</a>
+  </div>
+  {% if payments %}
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Chain</th>
+          <th>Address</th>
+          <th>Amount</th>
+          <th>Status</th>
+          <th>Confirmations</th>
+          <th>Created</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in payments %}
+        <tr>
+          <td><a href="/admin/payments/{{ p.id }}" class="font-mono" style="color:var(--foreground);text-decoration:underline;font-size:0.8125rem">{{ p.id[:8] }}…</a></td>
+          <td><span class="badge badge-secondary">{{ p.chain }}</span></td>
+          <td class="font-mono text-xs truncate" style="max-width:160px" title="{{ p.address }}">{{ p.address[:12] }}…</td>
+          <td class="font-mono">{{ p.amount_wei }}</td>
+          <td><span class="badge {{ p.status | badge }}">{{ p.status }}</span></td>
+          <td>{{ p.confirmations }}</td>
+          <td class="text-xs text-muted">{{ p.created_at | fmt_dt }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty-state">No payments found.</div>
+  {% endif %}
+</div>
+{% endblock %}

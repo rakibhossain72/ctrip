@@ -1,0 +1,69 @@
+{% extends "admin/_layout.html" %}
+{% block page_title %}Payments{% endblock %}
+{% block topbar_title %}Payments{% endblock %}
+
+{% block page_content %}
+<div class="page-header flex justify-between items-center">
+  <div>
+    <h1>Payments</h1>
+    <p>Recent payment requests across all chains.</p>
+  </div>
+</div>
+
+<form method="get" action="/admin/payments" class="card mb-6">
+  <div class="card-content flex gap-3 items-center" style="flex-wrap:wrap;">
+    <select class="input" name="status" style="width:150px">
+      <option value="">All statuses</option>
+      {% for s in ['pending', 'detected', 'confirmed', 'paid', 'settled', 'expired', 'failed'] %}
+      <option value="{{ s }}" {{ 'selected' if filters.status == s }}>{{ s }}</option>
+      {% endfor %}
+    </select>
+    <select class="input" name="chain" style="width:150px">
+      <option value="">All chains</option>
+      {% for c in chain_names %}
+      <option value="{{ c }}" {{ 'selected' if filters.chain == c }}>{{ c }}</option>
+      {% endfor %}
+    </select>
+    <input class="input" type="search" name="q" value="{{ filters.q }}" placeholder="Search address / id / amount…" style="max-width:280px" />
+    <button type="submit" class="btn btn-primary">Filter</button>
+    <a href="/admin/payments" class="btn btn-outline">↺ Reset</a>
+  </div>
+</form>
+
+<div class="card">
+  {% if payments %}
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Chain</th>
+          <th>Address</th>
+          <th>Amount</th>
+          <th>Status</th>
+          <th>Confirmations</th>
+          <th>Created</th>
+          <th>Expires</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in payments %}
+        <tr>
+          <td><a href="/admin/payments/{{ p.id }}" class="font-mono" style="color:var(--foreground);text-decoration:underline;font-size:0.8125rem">{{ p.id[:8] }}…</a></td>
+          <td><span class="badge badge-secondary">{{ p.chain }}</span></td>
+          <td class="font-mono text-xs truncate" style="max-width:160px" title="{{ p.address }}">{{ p.address[:12] }}…</td>
+          <td class="font-mono">{{ p.amount_wei }}</td>
+          <td><span class="badge {{ p.status | badge }}">{{ p.status }}</span></td>
+          <td>{{ p.confirmations }}</td>
+          <td class="text-xs text-muted">{{ p.created_at | fmt_dt }}</td>
+          <td class="text-xs text-muted">{{ p.expires_at | fmt_dt }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty-state">No payments found.</div>
+  {% endif %}
+</div>
+{% endblock %}

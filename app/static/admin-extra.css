@@ -1,0 +1,41 @@
+/* Admin UI supplementary styles not covered by the compiled Tailwind bundle */
+
+/* Toast enter/exit animations (ports App.tsx motion.toast) */
+.toast-enter {
+  animation: toast-in 0.25s ease both;
+}
+.toast-exit {
+  animation: toast-out 0.2s ease both;
+}
+@keyframes toast-in {
+  from { opacity: 0; transform: translateX(50px) scale(0.9); }
+  to { opacity: 1; transform: translateX(0) scale(1); }
+}
+@keyframes toast-out {
+  from { opacity: 1; transform: translateX(0) scale(1); }
+  to { opacity: 0; transform: translateX(50px) scale(0.9); }
+}
+
+/* AnalyticsView animate-fade-in (custom class in the React source) */
+.animate-fade-in {
+  animation: fade-in 0.35s ease both;
+}
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Countdown expiry progress bar transition */
+.expiry-bar {
+  transition: width 1s linear;
+}
+
+/* Raw-key modal display text wrap */
+.raw-key {
+  word-break: break-all;
+}
+
+/* Prevent text selection of decorative copy while allowing content selection */
+.select-all {
+  user-select: all;
+}

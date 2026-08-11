@@ -1,0 +1,250 @@
+{% extends "admin/_layout.html" %}
+{% block page_title %}Payment Detail{% endblock %}
+{% block topbar_title %}Payment Detail{% endblock %}
+
+{% block extra_css %}
+  .layout { display: grid; grid-template-columns: 1fr 320px; gap: 16px; align-items: start; }
+  @media (max-width: 800px) { .layout { grid-template-columns: 1fr; } }
+
+  .field-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 11px 0;
+    border-bottom: 1px solid var(--border);
+    gap: 16px;
+    font-size: 0.875rem;
+  }
+  .field-row:last-child { border-bottom: none; }
+  .field-label { color: var(--muted-foreground); font-weight: 500; flex-shrink: 0; }
+  .field-value { text-align: right; word-break: break-all; }
+
+  .address-copy { display: flex; align-items: center; gap: 8px; justify-content: flex-end; }
+  .address-mono {
+    font-family: monospace;
+    font-size: 0.8125rem;
+    max-width: 220px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .page-title { font-size: 1.125rem; font-family: monospace; font-weight: 600; word-break: break-all; }
+  .page-meta { font-size: 0.8125rem; color: var(--muted-foreground); margin-top: 4px; }
+
+  .timeline { display: flex; flex-direction: column; }
+  .timeline-item { display: flex; gap: 14px; padding: 14px 0; border-bottom: 1px solid var(--border); font-size: 0.875rem; }
+  .timeline-item:last-child { border-bottom: none; }
+  .tl-dot-wrap { display: flex; flex-direction: column; align-items: center; flex-shrink: 0; padding-top: 3px; }
+  .tl-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+  .tl-dot-success { background: var(--success); }
+  .tl-dot-pending { background: var(--warning); }
+  .tl-dot-failed { background: var(--destructive); }
+  .tl-line { width: 1px; flex: 1; background: var(--border); margin-top: 4px; }
+  .tl-body { flex: 1; min-width: 0; }
+  .tl-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 2px; }
+  .tl-event { font-weight: 500; }
+  .tl-time { font-size: 0.75rem; color: var(--muted-foreground); white-space: nowrap; }
+  .tl-detail { color: var(--muted-foreground); font-size: 0.8125rem; }
+  .tl-error { color: var(--destructive); font-size: 0.8125rem; margin-top: 4px; }
+
+  .tx-hash {
+    font-family: monospace;
+    font-size: 0.8125rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 260px;
+    display: inline-block;
+    vertical-align: bottom;
+  }
+
+  .actions-col { display: flex; flex-direction: column; gap: 12px; }
+  .action-card { padding: 18px 20px; }
+  .action-card h3 { font-size: 0.875rem; font-weight: 600; margin-bottom: 12px; }
+  .empty-note { color: var(--muted-foreground); font-size: 0.875rem; padding: 20px 0; text-align: center; }
+{% endblock %}
+
+{% block page_content %}
+<div class="page-header flex justify-between items-start" style="gap:16px;">
+  <div>
+    <div class="page-title">{{ payment.id }}</div>
+    <div class="page-meta">Created {{ payment.created_at | fmt_dt_full }}</div>
+  </div>
+  <div style="display:flex; gap:8px; align-items:center;">
+    <span class="badge {{ payment.status | badge }}">{{ payment.status }}</span>
+    <a href="/payment/{{ payment.id }}" target="_blank" class="btn btn-outline btn-sm">Public Page ↗</a>
+  </div>
+</div>
+
+<div class="layout">
+  <div>
+    <div class="card mb-6">
+      <div class="card-header">
+        <div class="card-title">Payment Info</div>
+      </div>
+      <div class="card-content" style="padding: 0 24px;">
+        <div class="field-row">
+          <span class="field-label">Chain</span>
+          <span class="field-value"><span class="badge badge-secondary">{{ payment.chain }}</span></span>
+        </div>
+        <div class="field-row">
+          <span class="field-label">API Key</span>
+          <span class="field-value">{{ payment.api_key_name or '—' }}</span>
+        </div>
+        <div class="field-row">
+          <span class="field-label">Address</span>
+          <span class="field-value">
+            <div class="address-copy">
+              <span class="address-mono" id="fAddress" title="{{ payment.address }}">{{ payment.address }}</span>
+              <button class="btn btn-outline btn-sm" onclick="copyAddress()">Copy</button>
+            </div>
+          </span>
+        </div>
+        <div class="field-row">
+          <span class="field-label">Amount</span>
+          <span class="field-value font-mono">{{ payment.amount_wei }}</span>
+        </div>
+        <div class="field-row">
+          <span class="field-label">Confirmations</span>
+          <span class="field-value">{{ payment.confirmations }}</span>
+        </div>
+        <div class="field-row">
+          <span class="field-label">Detected in Block</span>
+          <span class="field-value">{{ payment.detected_in_block if payment.detected_in_block is not none else '—' }}</span>
+        </div>
+        <div class="field-row">
+          <span class="field-label">Token Contract</span>
+          <span class="field-value font-mono text-sm">{{ payment.token_contract_address or '—' }}</span>
+        </div>
+        <div class="field-row">
+          <span class="field-label">Created</span>
+          <span class="field-value text-sm">{{ payment.created_at | fmt_dt_full }}</span>
+        </div>
+        <div class="field-row">
+          <span class="field-label">Expires</span>
+          <span class="field-value text-sm">{{ payment.expires_at | fmt_dt_full }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card mb-6">
+      <div class="card-header">
+        <div class="card-title">Transactions</div>
+        <span class="badge badge-secondary">{{ payment.transactions | length }}</span>
+      </div>
+      <div class="card-content" style="padding: 0 24px;">
+        {% if payment.transactions %}
+          {% for t in payment.transactions %}
+          <div class="field-row">
+            <span class="field-label"><span class="badge {{ t.status | badge }}">{{ t.status }}</span></span>
+            <span class="field-value" style="min-width:0">
+              <span class="tx-hash" title="{{ t.tx_hash }}">{{ t.tx_hash }}</span>
+              <div class="text-xs text-muted" style="margin-top:2px">
+                Block {{ t.block_number if t.block_number is not none else '?' }} · {{ t.confirmations }} conf.
+              </div>
+            </span>
+          </div>
+          {% endfor %}
+        {% else %}
+          <div class="empty-note">No transactions recorded yet.</div>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Webhook Attempts</div>
+        <span class="badge badge-secondary">{{ payment.webhooks | length }}</span>
+      </div>
+      <div class="card-content" style="padding: 0 24px;">
+        {% if payment.webhooks %}
+          <div class="timeline" style="padding: 4px 0;">
+            {% for w in payment.webhooks %}
+            <div class="timeline-item">
+              <div class="tl-dot-wrap">
+                <div class="tl-dot {{ 'tl-dot-success' if w.status == 'success' else ('tl-dot-failed' if w.status == 'failed' else 'tl-dot-pending') }}"></div>
+                {% if not loop.last %}<div class="tl-line"></div>{% endif %}
+              </div>
+              <div class="tl-body">
+                <div class="tl-header">
+                  <span class="tl-event">{{ w.event_type }}</span>
+                  <span class="tl-time">{{ w.created_at | fmt_dt_full }}</span>
+                </div>
+                <div class="tl-detail">
+                  <span class="badge {{ 'badge-success' if w.status == 'success' else ('badge-destructive' if w.status == 'failed' else 'badge-secondary') }}" style="font-size:0.7rem">{{ w.status }}</span>
+                  · {{ w.retry_count }} retr{{ 'y' if w.retry_count == 1 else 'ies' }}
+                  · <span class="address-mono" style="max-width:180px; font-size:0.75rem" title="{{ w.webhook_url }}">{{ w.webhook_url }}</span>
+                </div>
+                {% if w.last_error %}<div class="tl-error">✕ {{ w.last_error }}</div>{% endif %}
+                {% if w.next_retry_at %}<div class="tl-detail" style="margin-top:2px">Next retry: {{ w.next_retry_at | fmt_dt_full }}</div>{% endif %}
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="empty-note">No webhook attempts yet.</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="actions-col">
+    <div class="card action-card">
+      <h3>Operations</h3>
+      <div style="display:flex; flex-direction:column; gap:8px;">
+        <form method="post" action="/admin/actions/scan-now">
+          <input type="hidden" name="next" value="/admin/payments/{{ payment.id }}" />
+          <button type="submit" class="btn btn-secondary" style="width:100%">⟳ &nbsp;Scan Payment</button>
+        </form>
+        <form method="post" action="/admin/actions/sweep-now">
+          <input type="hidden" name="next" value="/admin/payments/{{ payment.id }}" />
+          <button type="submit" class="btn btn-secondary" style="width:100%">↑ &nbsp;Sweep All</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="card action-card">
+      <h3>Sweep Address</h3>
+      <form method="post" action="/admin/actions/sweep-address">
+        <input type="hidden" name="next" value="/admin/payments/{{ payment.id }}" />
+        <input type="hidden" name="address" value="{{ payment.address }}" />
+        <div class="form-group" style="margin-bottom:10px;">
+          <label class="label" style="font-size:0.8125rem;">Chain</label>
+          <select class="input" name="chain_name" style="font-size:0.8125rem;">
+            {% for c in chain_names %}
+            <option value="{{ c }}" {{ 'selected' if c == payment.chain }}>{{ c }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width:100%">Sweep Address</button>
+      </form>
+    </div>
+
+    <div class="card action-card">
+      <h3>Send Webhook</h3>
+      <form method="post" action="/admin/actions/send-webhook">
+        <input type="hidden" name="next" value="/admin/payments/{{ payment.id }}" />
+        <input type="hidden" name="payment_id" value="{{ payment.id }}" />
+        <div class="form-group" style="margin-bottom:10px;">
+          <select class="input" name="event_type" style="font-size:0.8125rem;">
+            {% for ev in webhook_events %}
+            <option value="{{ ev }}">{{ ev }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width:100%">Send</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block page_scripts %}
+<script>
+  function copyAddress() {
+    navigator.clipboard.writeText(document.getElementById('fAddress').title)
+      .then(() => showToast('Address copied'));
+  }
+</script>
+{% endblock %}

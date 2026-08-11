@@ -1,0 +1,109 @@
+{% extends "admin/_layout.html" %}
+{% block page_title %}Analytics{% endblock %}
+{% block topbar_title %}Analytics{% endblock %}
+
+{% block page_content %}
+<div class="page-header">
+  <h1>Analytics</h1>
+  <p>Payment volume and chain breakdown.</p>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <div class="card-title">Volume by Status</div>
+  </div>
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr><th>Status</th><th>Count</th><th>Share</th></tr>
+      </thead>
+      <tbody>
+        {% for s in status_stats %}
+        <tr>
+          <td><span class="badge {{ s.status | badge }}">{{ s.status }}</span></td>
+          <td class="font-semibold">{{ s.count | fmt_int }}</td>
+          <td>
+            <div style="display:flex; align-items:center; gap:10px;">
+              <div style="flex:1; max-width:200px; height:6px; background:var(--muted); border-radius:3px; overflow:hidden;">
+                <div style="width:{{ s.percent }}%; height:100%; background:var(--primary);"></div>
+              </div>
+              <span class="text-sm text-muted">{{ s.percent }}%</span>
+            </div>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="3" class="empty-state">No data</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card" style="margin-top:16px;">
+  <div class="card-header">
+    <div class="card-title">By Chain</div>
+  </div>
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr><th>Chain</th><th>Count</th><th>Volume</th><th>Share</th></tr>
+      </thead>
+      <tbody>
+        {% for c in chain_stats %}
+        <tr>
+          <td><span class="badge badge-secondary">{{ c.chain }}</span></td>
+          <td>{{ c.count | fmt_int }}</td>
+          <td class="font-mono">{{ c.volume_wei }}</td>
+          <td>
+            <div style="display:flex; align-items:center; gap:10px;">
+              <div style="flex:1; max-width:200px; height:6px; background:var(--muted); border-radius:3px; overflow:hidden;">
+                <div style="width:{{ c.percent }}%; height:100%; background:var(--primary);"></div>
+              </div>
+              <span class="text-sm text-muted">{{ c.percent }}%</span>
+            </div>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="4" class="empty-state">No data</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card" style="margin-top:16px;">
+  <div class="card-header flex justify-between items-center">
+    <div class="card-title">Daily Volume</div>
+    <form method="get" action="/admin/analytics" class="flex gap-2 items-center">
+      <select class="input" name="days" onchange="this.form.submit()" style="width:150px">
+        {% for n in [7, 30, 90] %}
+        <option value="{{ n }}" {{ 'selected' if days == n }}>Last {{ n }} days</option>
+        {% endfor %}
+      </select>
+    </form>
+  </div>
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr><th>Date</th><th>Count</th><th>Volume</th><th style="width:40%">Activity</th></tr>
+      </thead>
+      <tbody>
+        {% for d in daily_stats %}
+        <tr>
+          <td>{{ d.date }}</td>
+          <td>{{ d.count | fmt_int }}</td>
+          <td class="font-mono">{{ d.volume_wei }}</td>
+          <td>
+            <div style="height:6px; background:var(--muted); border-radius:3px; overflow:hidden;">
+              <div style="width:{{ d.pct }}%; height:100%; background:#3b82f6;"></div>
+            </div>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="4" class="empty-state">No data</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
