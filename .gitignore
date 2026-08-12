@@ -25,3 +25,4 @@ coverage/
 .env*
 !.env.example
 ctrip.egg-info/*
+ctrip-docs/site/
