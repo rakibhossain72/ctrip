@@ -3,7 +3,7 @@
 
 {% block head %}
 <style>
-  body { display: flex; height: 100vh; overflow: hidden; background: var(--muted); }
+  .admin { display: flex; height: 100vh; overflow: hidden; background: var(--muted); }
 
   .sidebar {
     width: var(--sidebar-width);
@@ -67,8 +67,8 @@
     margin-bottom: 2px;
   }
   .nav-item:hover { background: var(--accent); color: var(--foreground); }
-  .nav-item.active { background: var(--accent); color: var(--foreground); font-weight: 600; }
-  .nav-item .icon { font-size: 1rem; width: 20px; text-align: center; flex-shrink: 0; }
+  .nav-item.active { background: var(--accent); color: var(--foreground); font-weight: 600; border-left: 2px solid var(--primary); padding-left: 10px; }
+  .nav-item .icon { width: 16px; text-align: center; flex-shrink: 0; }
 
   .sidebar-footer {
     padding: 12px 8px;
@@ -81,6 +81,7 @@
     height: 57px;
     background: var(--card);
     border-bottom: 1px solid var(--border);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04);
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -112,7 +113,7 @@
     padding: 28px;
     width: 100%;
     max-width: 440px;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.12);
   }
   .modal h3 { margin-bottom: 8px; }
   .modal p { font-size: 0.875rem; margin-bottom: 16px; }
@@ -121,7 +122,7 @@
     border: 1px solid var(--border);
     border-radius: var(--radius);
     padding: 12px 14px;
-    font-family: monospace;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
     font-size: 0.8125rem;
     word-break: break-all;
     margin-bottom: 16px;
@@ -129,63 +130,63 @@
   }
   .modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
 
-  /* Stat cards */
-  .stat-card { padding: 20px 24px; }
-  .stat-label { font-size: 0.8125rem; font-weight: 500; color: var(--muted-foreground); margin-bottom: 8px; }
-  .stat-value { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; }
-  .stat-sub { font-size: 0.8125rem; color: var(--muted-foreground); margin-top: 4px; }
+  @media (max-width: 768px) {
+    .sidebar { display: none; }
+  }
   {% block extra_css %}{% endblock %}
 </style>
 {% endblock %}
 
 {% block body %}
-<aside class="sidebar">
-  <div class="sidebar-header">
-    <div class="sidebar-logo">C</div>
-    <div>
-      <div class="sidebar-title">Ctrip</div>
-      <div class="sidebar-subtitle">Admin Panel</div>
+<div class="admin">
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo">C</div>
+      <div>
+        <div class="sidebar-title">Ctrip</div>
+        <div class="sidebar-subtitle">Admin Panel</div>
+      </div>
     </div>
-  </div>
 
-  <nav class="sidebar-nav">
-    <div class="nav-section-label">Overview</div>
-    <a class="nav-item {{ 'active' if active_section == 'overview' }}" href="/admin/overview">
-      <span class="icon">◈</span> Dashboard
-    </a>
-    <a class="nav-item {{ 'active' if active_section == 'payments' }}" href="/admin/payments">
-      <span class="icon">⟳</span> Payments
-    </a>
-    <a class="nav-item {{ 'active' if active_section == 'analytics' }}" href="/admin/analytics">
-      <span class="icon">▦</span> Analytics
-    </a>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Overview</div>
+      <a class="nav-item {{ 'active' if active_section == 'overview' }}" href="/admin/overview">
+        {{ icon('dashboard') }} Dashboard
+      </a>
+      <a class="nav-item {{ 'active' if active_section == 'payments' }}" href="/admin/payments">
+        {{ icon('payments') }} Payments
+      </a>
+      <a class="nav-item {{ 'active' if active_section == 'analytics' }}" href="/admin/analytics">
+        {{ icon('analytics') }} Analytics
+      </a>
 
-    <div class="nav-section-label">Management</div>
-    <a class="nav-item {{ 'active' if active_section == 'apikeys' }}" href="/admin/apikeys">
-      <span class="icon">⚿</span> API Keys
-    </a>
-    <a class="nav-item {{ 'active' if active_section == 'ops' }}" href="/admin/ops">
-      <span class="icon">⚙</span> Operations
-    </a>
-  </nav>
+      <div class="nav-section-label">Management</div>
+      <a class="nav-item {{ 'active' if active_section == 'apikeys' }}" href="/admin/apikeys">
+        {{ icon('apikeys') }} API Keys
+      </a>
+      <a class="nav-item {{ 'active' if active_section == 'ops' }}" href="/admin/ops">
+        {{ icon('settings') }} Operations
+      </a>
+    </nav>
 
-  <div class="sidebar-footer">
-    <form method="post" action="/admin/logout" style="width:100%">
-      <button type="submit" class="nav-item btn-ghost" style="width:100%; color: var(--destructive);">
-        <span class="icon">⏻</span> Sign Out
-      </button>
-    </form>
-  </div>
-</aside>
+    <div class="sidebar-footer">
+      <form method="post" action="/admin/logout" style="width:100%">
+        <button type="submit" class="nav-item" style="width:100%; color: var(--foreground);">
+          {{ icon('log-out') }} Sign Out
+        </button>
+      </form>
+    </div>
+  </aside>
 
-<div class="main">
-  <header class="topbar">
-    <span class="topbar-title">{% block topbar_title %}{% endblock %}</span>
-    <span class="text-sm text-muted">{{ user.username if user else '' }}</span>
-  </header>
+  <div class="main">
+    <header class="topbar">
+      <span class="topbar-title">{% block topbar_title %}{% endblock %}</span>
+      <span class="text-sm text-muted">{{ user.username if user else '' }}</span>
+    </header>
 
-  <div class="content">
-    {% block page_content %}{% endblock %}
+    <div class="content">
+      {% block page_content %}{% endblock %}
+    </div>
   </div>
 </div>
 

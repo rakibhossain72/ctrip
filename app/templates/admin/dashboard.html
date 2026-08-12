@@ -5,7 +5,7 @@
 {% block page_content %}
 <div class="page-header">
   <h1>Dashboard</h1>
-  <p>Your payment gateway at a glance.</p>
+  <p class="text-lead">Your payment gateway at a glance.</p>
 </div>
 
 <div class="grid grid-4 mb-6">
@@ -31,28 +31,28 @@
   </div>
 </div>
 
-<div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px;">
+<div class="grid grid-2 mb-6">
   <div class="card">
     <div class="card-header">
       <div>
         <div class="card-title">Webhook Health</div>
         <div class="card-description">Delivery success rate</div>
       </div>
-      <span class="badge {{ 'badge-success' if webhook_rate >= 90 else ('badge-warning' if webhook_rate >= 60 else 'badge-destructive') }}">{{ '%.1f' % webhook_rate }}% success</span>
+      <span class="badge {{ 'badge-default' if webhook_rate >= 90 else ('badge-secondary' if webhook_rate >= 60 else 'badge-outline') }}">{{ '%.1f' % webhook_rate }}% success</span>
     </div>
     <div class="card-content">
       <div class="grid grid-3">
         <div>
           <div class="stat-label">Total</div>
-          <div style="font-size:1.25rem;font-weight:600">{{ summary.webhooks.total_attempts | fmt_int }}</div>
+          <div class="text-sm font-semibold">{{ summary.webhooks.total_attempts | fmt_int }}</div>
         </div>
         <div>
           <div class="stat-label">Successful</div>
-          <div style="font-size:1.25rem;font-weight:600">{{ summary.webhooks.successful | fmt_int }}</div>
+          <div class="text-sm font-semibold">{{ summary.webhooks.successful | fmt_int }}</div>
         </div>
         <div>
           <div class="stat-label">Failed</div>
-          <div style="font-size:1.25rem;font-weight:600">{{ summary.webhooks.failed | fmt_int }}</div>
+          <div class="text-sm font-semibold">{{ summary.webhooks.failed | fmt_int }}</div>
         </div>
       </div>
     </div>
@@ -68,15 +68,15 @@
       <div class="grid grid-3">
         <div>
           <div class="stat-label">Total</div>
-          <div style="font-size:1.25rem;font-weight:600">{{ summary.transactions.total_transactions | fmt_int }}</div>
+          <div class="text-sm font-semibold">{{ summary.transactions.total_transactions | fmt_int }}</div>
         </div>
         <div>
           <div class="stat-label">Confirmed</div>
-          <div style="font-size:1.25rem;font-weight:600">{{ summary.transactions.confirmed | fmt_int }}</div>
+          <div class="text-sm font-semibold">{{ summary.transactions.confirmed | fmt_int }}</div>
         </div>
         <div>
           <div class="stat-label">Pending</div>
-          <div style="font-size:1.25rem;font-weight:600">{{ summary.transactions.pending | fmt_int }}</div>
+          <div class="text-sm font-semibold">{{ summary.transactions.pending | fmt_int }}</div>
         </div>
       </div>
     </div>
@@ -92,10 +92,10 @@
   </div>
   <div class="card-content flex gap-3">
     <form method="post" action="/admin/actions/scan-now">
-      <button type="submit" class="btn btn-secondary">⟳ &nbsp;Trigger Payment Scan</button>
+      <button type="submit" class="btn btn-secondary">{{ icon('refresh-cw') }} Trigger Payment Scan</button>
     </form>
     <form method="post" action="/admin/actions/sweep-now">
-      <button type="submit" class="btn btn-secondary">↑ &nbsp;Trigger Global Sweep</button>
+      <button type="submit" class="btn btn-secondary">{{ icon('arrow-up') }} Trigger Global Sweep</button>
     </form>
   </div>
 </div>
@@ -125,7 +125,7 @@
       <tbody>
         {% for p in payments %}
         <tr>
-          <td><a href="/admin/payments/{{ p.id }}" class="font-mono" style="color:var(--foreground);text-decoration:underline;font-size:0.8125rem">{{ p.id[:8] }}…</a></td>
+          <td><a href="/admin/payments/{{ p.id }}" class="font-mono text-label" style="color:var(--foreground);text-decoration:underline;">{{ p.id[:8] }}…</a></td>
           <td><span class="badge badge-secondary">{{ p.chain }}</span></td>
           <td class="font-mono text-xs truncate" style="max-width:160px" title="{{ p.address }}">{{ p.address[:12] }}…</td>
           <td class="font-mono">{{ p.amount_wei }}</td>

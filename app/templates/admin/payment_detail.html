@@ -3,6 +3,7 @@
 {% block topbar_title %}Payment Detail{% endblock %}
 
 {% block extra_css %}
+<style>
   .layout { display: grid; grid-template-columns: 1fr 320px; gap: 16px; align-items: start; }
   @media (max-width: 800px) { .layout { grid-template-columns: 1fr; } }
 
@@ -10,7 +11,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 11px 0;
+    padding: 12px 0;
     border-bottom: 1px solid var(--border);
     gap: 16px;
     font-size: 0.875rem;
@@ -21,7 +22,7 @@
 
   .address-copy { display: flex; align-items: center; gap: 8px; justify-content: flex-end; }
   .address-mono {
-    font-family: monospace;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
     font-size: 0.8125rem;
     max-width: 220px;
     overflow: hidden;
@@ -29,7 +30,7 @@
     white-space: nowrap;
   }
 
-  .page-title { font-size: 1.125rem; font-family: monospace; font-weight: 600; word-break: break-all; }
+  .page-title { font-size: 1.125rem; font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace; font-weight: 600; word-break: break-all; }
   .page-meta { font-size: 0.8125rem; color: var(--muted-foreground); margin-top: 4px; }
 
   .timeline { display: flex; flex-direction: column; }
@@ -37,19 +38,19 @@
   .timeline-item:last-child { border-bottom: none; }
   .tl-dot-wrap { display: flex; flex-direction: column; align-items: center; flex-shrink: 0; padding-top: 3px; }
   .tl-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
-  .tl-dot-success { background: var(--success); }
-  .tl-dot-pending { background: var(--warning); }
-  .tl-dot-failed { background: var(--destructive); }
+  .tl-dot-success { background: var(--foreground); }
+  .tl-dot-pending { background: var(--muted-foreground); }
+  .tl-dot-failed { background: var(--muted-foreground); }
   .tl-line { width: 1px; flex: 1; background: var(--border); margin-top: 4px; }
   .tl-body { flex: 1; min-width: 0; }
   .tl-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 2px; }
   .tl-event { font-weight: 500; }
   .tl-time { font-size: 0.75rem; color: var(--muted-foreground); white-space: nowrap; }
   .tl-detail { color: var(--muted-foreground); font-size: 0.8125rem; }
-  .tl-error { color: var(--destructive); font-size: 0.8125rem; margin-top: 4px; }
+  .tl-error { color: var(--foreground); font-size: 0.8125rem; margin-top: 4px; }
 
   .tx-hash {
-    font-family: monospace;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
     font-size: 0.8125rem;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -59,10 +60,11 @@
     vertical-align: bottom;
   }
 
-  .actions-col { display: flex; flex-direction: column; gap: 12px; }
+  .actions-col { display: flex; flex-direction: column; gap: 16px; }
   .action-card { padding: 18px 20px; }
   .action-card h3 { font-size: 0.875rem; font-weight: 600; margin-bottom: 12px; }
   .empty-note { color: var(--muted-foreground); font-size: 0.875rem; padding: 20px 0; text-align: center; }
+</style>
 {% endblock %}
 
 {% block page_content %}
@@ -73,7 +75,7 @@
   </div>
   <div style="display:flex; gap:8px; align-items:center;">
     <span class="badge {{ payment.status | badge }}">{{ payment.status }}</span>
-    <a href="/payment/{{ payment.id }}" target="_blank" class="btn btn-outline btn-sm">Public Page ↗</a>
+    <a href="/payment/{{ payment.id }}" target="_blank" class="btn btn-outline btn-sm">{{ icon('external-link') }} Public Page</a>
   </div>
 </div>
 
@@ -97,7 +99,7 @@
           <span class="field-value">
             <div class="address-copy">
               <span class="address-mono" id="fAddress" title="{{ payment.address }}">{{ payment.address }}</span>
-              <button class="btn btn-outline btn-sm" onclick="copyAddress()">Copy</button>
+              <button class="btn btn-outline btn-sm" onclick="copyAddress()">{{ icon('copy') }} Copy</button>
             </div>
           </span>
         </div>
@@ -172,7 +174,7 @@
                   <span class="tl-time">{{ w.created_at | fmt_dt_full }}</span>
                 </div>
                 <div class="tl-detail">
-                  <span class="badge {{ 'badge-success' if w.status == 'success' else ('badge-destructive' if w.status == 'failed' else 'badge-secondary') }}" style="font-size:0.7rem">{{ w.status }}</span>
+                  <span class="badge {{ 'badge-default' if w.status == 'success' else ('badge-outline' if w.status == 'failed' else 'badge-secondary') }}" style="font-size:0.7rem">{{ w.status }}</span>
                   · {{ w.retry_count }} retr{{ 'y' if w.retry_count == 1 else 'ies' }}
                   · <span class="address-mono" style="max-width:180px; font-size:0.75rem" title="{{ w.webhook_url }}">{{ w.webhook_url }}</span>
                 </div>
@@ -195,11 +197,11 @@
       <div style="display:flex; flex-direction:column; gap:8px;">
         <form method="post" action="/admin/actions/scan-now">
           <input type="hidden" name="next" value="/admin/payments/{{ payment.id }}" />
-          <button type="submit" class="btn btn-secondary" style="width:100%">⟳ &nbsp;Scan Payment</button>
+          <button type="submit" class="btn btn-secondary" style="width:100%">{{ icon('refresh-cw') }} Scan Payment</button>
         </form>
         <form method="post" action="/admin/actions/sweep-now">
           <input type="hidden" name="next" value="/admin/payments/{{ payment.id }}" />
-          <button type="submit" class="btn btn-secondary" style="width:100%">↑ &nbsp;Sweep All</button>
+          <button type="submit" class="btn btn-secondary" style="width:100%">{{ icon('arrow-up') }} Sweep All</button>
         </form>
       </div>
     </div>

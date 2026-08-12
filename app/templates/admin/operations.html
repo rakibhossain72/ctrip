@@ -5,7 +5,7 @@
 {% block page_content %}
 <div class="page-header">
   <h1>Operations</h1>
-  <p>Manual controls for payments, sweeps, and webhooks.</p>
+  <p class="text-lead">Manual controls for payments, sweeps, and webhooks.</p>
 </div>
 
 <div class="grid grid-2">
@@ -32,7 +32,7 @@
             {% endfor %}
           </select>
         </div>
-        <button type="submit" class="btn btn-primary">Sweep</button>
+        <button type="submit" class="btn btn-primary">{{ icon('arrow-up') }} Sweep</button>
       </form>
     </div>
   </div>
@@ -59,7 +59,7 @@
             {% endfor %}
           </select>
         </div>
-        <button type="submit" class="btn btn-primary">Process</button>
+        <button type="submit" class="btn btn-primary">{{ icon('activity') }} Process</button>
       </form>
     </div>
   </div>
@@ -86,7 +86,7 @@
             {% endfor %}
           </select>
         </div>
-        <button type="submit" class="btn btn-primary">Send</button>
+        <button type="submit" class="btn btn-primary">{{ icon('mail') }} Send</button>
       </form>
     </div>
   </div>
@@ -109,7 +109,7 @@
           <label class="label">Secret (optional)</label>
           <input class="input" name="secret" placeholder="whsec_…" />
         </div>
-        <button type="submit" class="btn btn-primary">Send</button>
+        <button type="submit" class="btn btn-primary">{{ icon('zap') }} Send</button>
       </form>
     </div>
   </div>

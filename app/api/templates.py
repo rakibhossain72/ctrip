@@ -48,15 +48,15 @@ def fmt_int(value) -> str:
 
 
 def badge_class(status: str) -> str:
-    """Bootstrap-style badge variant for a payment status."""
+    """Monochrome badge variant for a payment status."""
     mapping = {
-        "pending": "badge-warning",
+        "pending": "badge-secondary",
         "detected": "badge-outline",
-        "confirmed": "badge-success",
-        "paid": "badge-success",
-        "settled": "badge-success",
-        "expired": "badge-destructive",
-        "failed": "badge-destructive",
+        "confirmed": "badge-default",
+        "paid": "badge-default",
+        "settled": "badge-default",
+        "expired": "badge-outline",
+        "failed": "badge-outline",
     }
     return mapping.get(status, "badge-secondary")
 

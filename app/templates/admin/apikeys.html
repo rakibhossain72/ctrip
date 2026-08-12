@@ -6,9 +6,9 @@
 <div class="page-header flex justify-between items-center">
   <div>
     <h1>API Keys</h1>
-    <p>Manage merchant API keys for payment creation.</p>
+    <p class="text-lead">Manage merchant API keys for payment creation.</p>
   </div>
-  <button class="btn btn-primary" onclick="openCreateKeyModal()">+ Create Key</button>
+  <button class="btn btn-primary" onclick="openCreateKeyModal()">{{ icon('key') }} Create Key</button>
 </div>
 
 <div class="card">
@@ -32,9 +32,9 @@
           <td><code class="font-mono text-sm">{{ k.key_prefix }}…</code></td>
           <td>
             {% if k.is_active %}
-            <span class="badge badge-success">Active</span>
+            <span class="badge badge-default">Active</span>
             {% else %}
-            <span class="badge badge-destructive">Revoked</span>
+            <span class="badge badge-outline">Revoked</span>
             {% endif %}
           </td>
           <td class="text-xs text-muted">{{ k.created_at | fmt_dt_full if k.created_at else '—' }}</td>
@@ -43,7 +43,7 @@
             {% if k.is_active %}
             <form method="post" action="/admin/actions/apikeys/{{ k.id }}/revoke" onsubmit="return confirm('Revoke this API key? This cannot be undone.')">
               <input type="hidden" name="next" value="/admin/apikeys" />
-              <button type="submit" class="btn btn-outline btn-sm">Revoke</button>
+              <button type="submit" class="btn btn-outline btn-sm">{{ icon('alert-circle') }} Revoke</button>
             </form>
             {% else %}
             —

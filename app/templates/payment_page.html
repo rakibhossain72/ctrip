@@ -1,5 +1,4 @@
-{% extends "base.html" %} {% block title %}Pay — Ctrip{% endblock %} {% block
-head %}
+{% extends "base.html" %} {% block title %}Pay — Ctrip{% endblock %} {% block head %}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
   body {
@@ -43,6 +42,8 @@ head %}
   .brand-name {
     font-weight: 600;
     font-size: 1rem;
+    font-family: 'Inter Tight', 'Inter', sans-serif;
+    letter-spacing: -0.02em;
   }
 
   /* Step indicator */
@@ -101,7 +102,7 @@ head %}
   .step.done .step-dot {
     border-color: var(--primary);
     background: var(--primary);
-    color: white;
+    color: var(--primary-foreground);
   }
   .step.done .step-label {
     color: var(--foreground);
@@ -110,12 +111,12 @@ head %}
     background: var(--primary);
   }
   .step.error .step-dot {
-    border-color: var(--destructive);
-    background: var(--destructive);
-    color: white;
+    border-color: var(--foreground);
+    background: var(--foreground);
+    color: var(--primary-foreground);
   }
   .step.error .step-label {
-    color: var(--destructive);
+    color: var(--foreground);
   }
 
   /* Card */
@@ -161,11 +162,10 @@ head %}
     width: 52px;
     height: 52px;
     border-radius: 50%;
-    background: #fee2e2;
+    background: var(--secondary);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.5rem;
     margin-bottom: 4px;
   }
 
@@ -182,11 +182,10 @@ head %}
     width: 60px;
     height: 60px;
     border-radius: 50%;
-    background: #dcfce7;
+    background: var(--secondary);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.75rem;
     margin-bottom: 6px;
     animation: pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
@@ -201,7 +200,7 @@ head %}
     }
   }
   .state-success h2 {
-    color: #166534;
+    color: var(--foreground);
   }
   .state-success p {
     color: var(--muted-foreground);
@@ -221,12 +220,24 @@ head %}
     width: 52px;
     height: 52px;
     border-radius: 50%;
-    background: #fef9c3;
+    background: var(--secondary);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.5rem;
     margin-bottom: 4px;
+  }
+
+  .state-error .icon-circle i {
+    font-size: 24px;
+  }
+  .state-success .icon-circle i {
+    font-size: 32px;
+  }
+  .state-expired .icon-circle i {
+    font-size: 24px;
+  }
+  .address-copy-btn i {
+    font-size: 16px;
   }
 
   /* Main payment UI */
@@ -259,6 +270,7 @@ head %}
     font-weight: 700;
     letter-spacing: -0.03em;
     line-height: 1;
+    font-variant-numeric: tabular-nums;
   }
   .amount-unit-top {
     font-size: 0.875rem;
@@ -294,7 +306,7 @@ head %}
     width: 100%;
   }
   .countdown-bar-fill.urgent {
-    background: var(--destructive);
+    background: var(--foreground);
   }
   .countdown-text {
     display: flex;
@@ -311,7 +323,7 @@ head %}
     font-variant-numeric: tabular-nums;
   }
   .countdown-time.urgent {
-    color: var(--destructive);
+    color: var(--foreground);
   }
 
   /* Body */
@@ -331,7 +343,7 @@ head %}
   }
   .qr-box {
     padding: 14px;
-    background: white;
+    background: var(--background);
     border: 1px solid var(--border);
     border-radius: var(--radius);
     display: inline-flex;
@@ -366,7 +378,7 @@ head %}
   }
   .address-box-text {
     flex: 1;
-    font-family: monospace;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
     font-size: 0.8125rem;
     padding: 10px 12px;
     overflow: hidden;
@@ -397,7 +409,7 @@ head %}
     background: var(--accent);
   }
   .address-copy-btn.copied {
-    color: #166534;
+    color: var(--foreground);
   }
 
   /* Status row */
@@ -421,7 +433,7 @@ head %}
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: var(--warning);
+    background: var(--foreground);
   }
   .status-dot.active {
     animation: blink 1.5s ease-in-out infinite;
@@ -436,12 +448,12 @@ head %}
     }
   }
   .status-dot.confirmed {
-    background: var(--success);
+    background: var(--foreground);
     animation: none;
   }
   .status-dot.expired,
   .status-dot.failed {
-    background: var(--destructive);
+    background: var(--muted-foreground);
     animation: none;
   }
   .status-text {
@@ -545,13 +557,17 @@ head %}
     </div>
 
     <div id="stateError" class="state-error" style="display: none">
-      <div class="icon-circle">✕</div>
+      <div class="icon-circle">
+        <i class="fa-solid fa-circle-xmark"></i>
+      </div>
       <h2 style="font-size: 1.125rem">Not Found</h2>
       <p id="errMsg">This payment could not be loaded.</p>
     </div>
 
     <div id="stateSuccess" class="state-success" style="display: none">
-      <div class="icon-circle">✓</div>
+      <div class="icon-circle">
+        <i class="fa-solid fa-circle-check"></i>
+      </div>
       <h2>Payment Received</h2>
       <p>Your payment has been confirmed on-chain. Thank you.</p>
       <div
@@ -565,7 +581,9 @@ head %}
     </div>
 
     <div id="stateExpired" class="state-expired" style="display: none">
-      <div class="icon-circle">⏱</div>
+      <div class="icon-circle">
+        <i class="fa-solid fa-clock"></i>
+      </div>
       <h2 style="font-size: 1.125rem">Payment Expired</h2>
       <p style="font-size: 0.875rem; color: var(--muted-foreground)">
         This payment window has closed. Please request a new payment link.
@@ -613,7 +631,8 @@ head %}
               id="copyBtn"
               onclick="copyAddress()"
             >
-              <span id="copyIcon">⎘</span> Copy
+              <span id="copyIcon"><i class="fa-solid fa-copy"></i></span>
+              <span id="copyText">Copy</span>
             </button>
           </div>
         </div>
@@ -641,7 +660,7 @@ head %}
             <div class="detail-key">Payment ID</div>
             <div
               class="detail-val"
-              style="font-family: monospace; font-size: 0.75rem"
+              style="font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace; font-size: 0.75rem"
               id="payId"
             >
               —
@@ -659,9 +678,8 @@ head %}
 </div>
 {% endblock %} {% block scripts %}
 <script>
-  // Directly inject the payment object safe-coded as JSON
   const paymentData = {{ payment | tojson }};
-  
+
   let expiresAt = null;
   let totalDuration = null;
   let countdownTimer = null;
@@ -712,7 +730,6 @@ head %}
       return;
     }
 
-    // Active Pending State
     updateSteps(status);
     showState("pending");
 
@@ -751,7 +768,6 @@ head %}
 
     startCountdown();
 
-    // Trigger full page reload instead of API poll if the status is active
     if (!TERMINAL.includes(status)) {
       clearTimeout(refreshTimer);
       refreshTimer = setTimeout(() => {
@@ -840,19 +856,17 @@ head %}
     const addr = document.getElementById("payAddress").textContent;
     navigator.clipboard.writeText(addr).then(() => {
       const btn = document.getElementById("copyBtn");
-      const icon = document.getElementById("copyIcon");
       btn.classList.add("copied");
-      icon.textContent = "✓";
-      btn.childNodes[1].textContent = " Copied";
+      document.getElementById("copyIcon").innerHTML = '<i class="fa-solid fa-check"></i>';
+      document.getElementById("copyText").textContent = " Copied";
       setTimeout(() => {
         btn.classList.remove("copied");
-        icon.textContent = "⎘";
-        btn.childNodes[1].textContent = " Copy";
+        document.getElementById("copyIcon").innerHTML = '<i class="fa-solid fa-copy"></i>';
+        document.getElementById("copyText").textContent = " Copy";
       }, 2000);
     });
   }
 
-  // Boot UI using data supplied directly from the backend context
   initPayment(paymentData);
 </script>
 {% endblock %}
