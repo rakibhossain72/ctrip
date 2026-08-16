@@ -1,10 +1,14 @@
+"""
+Quick smoke test for the BlockchainService wrapper.
+"""
+
 import asyncio
 
 from scanner.blockchain_service import BlockchainService
-from scanner.constants import ERC20_TRANSFER_TOPIC
 
 
 async def main():
+    """Instantiate the service and print a few health checks."""
     service = BlockchainService()
 
     for chain_id in sorted(service._clients):  # pylint: disable=protected-access

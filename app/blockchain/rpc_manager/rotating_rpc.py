@@ -67,12 +67,16 @@ class RotatingRPCManager:
     # lifecycle
 
     async def start(self):
+        """Start the health-check loop and initialize connections."""
         self._health_task = asyncio.create_task(self._health_loop())
         logger.info(
-            f"[RPC] Started — {len(self._http_eps)} HTTP, {len(self._wss_eps)} WSS"
+            "[RPC] Started — %s HTTP, %s WSS",
+            len(self._http_eps),
+            len(self._wss_eps),
         )
 
     async def stop(self):
+        """Cancel the health loop and disconnect all WSS providers."""
         if self._health_task:
             self._health_task.cancel()
             try:
@@ -80,19 +84,21 @@ class RotatingRPCManager:
             except asyncio.CancelledError:
                 pass
 
-        for url, w3 in list(self._wss_cache.items()):
+        for _, w3 in list(self._wss_cache.items()):
             try:
                 await w3.provider.disconnect()
-            except Exception:
+            except Exception:  # pylint: disable=broad-exception-caught
                 pass
         self._wss_cache.clear()
         logger.info("[RPC] Stopped")
 
     async def __aenter__(self):
+        """Enter async context manager."""
         await self.start()
         return self
 
     async def __aexit__(self, *_):
+        """Exit async context manager and stop."""
         await self.stop()
 
     # provider selection (weighted round-robin)
@@ -117,12 +123,7 @@ class RotatingRPCManager:
 
     # HTTP calls
     async def call(self, fn: Callable[[AsyncWeb3], Any]) -> Any:
-        """
-        Run an async web3 call over HTTP with automatic rotation + retry.
-
-        Example:
-            block = await manager.call(lambda w3: w3.eth.get_block("latest"))
-        """
+        """Run an async web3 call over HTTP with automatic rotation + retry."""
         last_exc: Exception = RuntimeError("No healthy HTTP endpoints")
 
         for attempt in range(self._max_retries):
@@ -136,10 +137,15 @@ class RotatingRPCManager:
                 result = await fn(w3)
                 ep.record_success((time.monotonic() - t0) * 1000)
                 return result
-            except Exception as exc:
+            except Exception as exc:  # pylint: disable=broad-exception-caught
                 ep.record_failure()
                 last_exc = exc
-                logger.debug(f"[HTTP] attempt {attempt+1} failed on {ep.url}: {exc}")
+                logger.debug(
+                    "[HTTP] attempt %s failed on %s: %s",
+                    attempt + 1,
+                    ep.url,
+                    exc,
+                )
                 if attempt < self._max_retries - 1:
                     await asyncio.sleep(self._retry_delay * (attempt + 1))
 
@@ -152,25 +158,21 @@ class RotatingRPCManager:
             w3 = AsyncWeb3(WebSocketProvider(ep.url))
             await w3.provider.connect()
             self._wss_cache[ep.url] = w3
-            logger.debug(f"[WSS] Connected: {ep.url}")
+            logger.debug("[WSS] Connected: %s", ep.url)
         return self._wss_cache[ep.url]
 
     async def _drop_wss(self, url: str):
+        """Remove a cached WSS connection from the pool."""
         w3 = self._wss_cache.pop(url, None)
         if w3:
             try:
                 await w3.provider.disconnect()
-            except Exception:
+            except Exception:  # pylint: disable=broad-exception-caught
                 pass
 
     # WSS one-shot calls
     async def call_wss(self, fn: Callable[[AsyncWeb3], Any]) -> Any:
-        """
-        Run an async web3 call over WebSocket with rotation + retry.
-
-        Example:
-            block = await manager.call_wss(lambda w3: w3.eth.get_block("latest"))
-        """
+        """Run an async web3 call over WebSocket with rotation + retry."""
         last_exc: Exception = RuntimeError("No healthy WSS endpoints")
 
         for attempt in range(self._max_retries):
@@ -184,11 +186,16 @@ class RotatingRPCManager:
                 result = await fn(w3)
                 ep.record_success((time.monotonic() - t0) * 1000)
                 return result
-            except Exception as exc:
+            except Exception as exc:  # pylint: disable=broad-exception-caught
                 ep.record_failure()
                 await self._drop_wss(ep.url)
                 last_exc = exc
-                logger.debug(f"[WSS] attempt {attempt+1} failed on {ep.url}: {exc}")
+                logger.debug(
+                    "[WSS] attempt %s failed on %s: %s",
+                    attempt + 1,
+                    ep.url,
+                    exc,
+                )
                 if attempt < self._max_retries - 1:
                     await asyncio.sleep(self._retry_delay * (attempt + 1))
 
@@ -200,15 +207,7 @@ class RotatingRPCManager:
         handler: EthSubscriptionHandler,
         reconnect: bool = True,
     ):
-        """
-        Subscribe to new block headers.
-
-        Example:
-            async def on_block(ctx, block):
-                print(block["number"])
-
-            await manager.subscribe_new_heads(on_block)
-        """
+        """Subscribe to new block headers."""
         await self._subscribe(NewHeadsSubscription(handler=handler), reconnect)
 
     async def subscribe_logs(
@@ -218,15 +217,7 @@ class RotatingRPCManager:
         topics=None,
         reconnect: bool = True,
     ):
-        """
-        Subscribe to contract logs.
-
-        Example:
-            async def on_log(ctx, log):
-                print(log)
-
-            await manager.subscribe_logs(on_log, address="0x...")
-        """
+        """Subscribe to contract logs."""
         kwargs = {}
         if address:
             kwargs["address"] = address
@@ -265,17 +256,23 @@ class RotatingRPCManager:
                 w3 = await self._get_wss(ep)
                 await w3.subscription_manager.subscribe(subscription)
                 logger.info(
-                    f"[WSS] Subscribed {subscription.__class__.__name__} on {ep.url}"
+                    "[WSS] Subscribed %s on %s",
+                    subscription.__class__.__name__,
+                    ep.url,
                 )
                 await w3.subscription_manager.handle_subscriptions()
 
             except asyncio.CancelledError:
                 logger.info("[WSS] Subscription task cancelled")
                 return
-            except Exception as exc:
+            except Exception as exc:  # pylint: disable=broad-exception-caught
                 ep.record_failure()
                 await self._drop_wss(ep.url)
-                logger.warning(f"[WSS] Subscription dropped on {ep.url}: {exc}")
+                logger.warning(
+                    "[WSS] Subscription dropped on %s: %s",
+                    ep.url,
+                    exc,
+                )
                 if not reconnect:
                     raise
                 logger.info("[WSS] Reconnecting in 2s…")
@@ -283,6 +280,7 @@ class RotatingRPCManager:
 
     # background health checks
     async def _health_loop(self):
+        """Periodically ping every endpoint to update health status."""
         while True:
             await asyncio.sleep(self._health_check_interval)
             tasks = [self._ping_http(ep) for ep in self._http_eps] + [
@@ -291,29 +289,33 @@ class RotatingRPCManager:
             await asyncio.gather(*tasks, return_exceptions=True)
 
     async def _ping_http(self, ep: RPCEndpoint):
+        """Health-check an HTTP endpoint."""
         try:
             w3 = AsyncWeb3(AsyncHTTPProvider(ep.url))
             await asyncio.wait_for(w3.eth.chain_id, timeout=5)
             ep.record_success()
-        except Exception as exc:
+        except Exception as exc:  # pylint: disable=broad-exception-caught
             ep.record_failure()
-            logger.debug(f"[Health HTTP] {ep.url}: {exc}")
+            logger.debug("[Health HTTP] %s: %s", ep.url, exc)
 
     async def _ping_wss(self, ep: RPCEndpoint):
+        """Health-check a WebSocket endpoint."""
         try:
             w3 = await asyncio.wait_for(self._get_wss(ep), timeout=5)
             await asyncio.wait_for(w3.eth.chain_id, timeout=5)
             ep.record_success()
-        except Exception as exc:
+        except Exception as exc:  # pylint: disable=broad-exception-caught
             ep.record_failure()
             await self._drop_wss(ep.url)
-            logger.debug(f"[Health WSS] {ep.url}: {exc}")
+            logger.debug("[Health WSS] %s: %s", ep.url, exc)
 
     # stats
     def stats(self) -> list[dict]:
+        """Return health and latency stats for every configured endpoint."""
         return [ep.stats() for ep in self._endpoints]
 
     def print_stats(self):
+        """Print a human-readable summary of endpoint health to stdout."""
         print("\n RPC Endpoint Stats")
         for s in self.stats():
             mark = "✓" if s["healthy"] else "✗"

@@ -1,3 +1,7 @@
+"""
+Pydantic schemas for analytics dashboard data.
+"""
+
 import datetime
 from typing import List, Optional
 
@@ -5,11 +9,15 @@ from pydantic import BaseModel
 
 
 class PaymentCountByStatus(BaseModel):
+    """Count of payments for a single status."""
+
     status: str
     count: int
 
 
 class PaymentVolumeSummary(BaseModel):
+    """Aggregated payment counts and volumes bucketed by status."""
+
     total_payments: int
     total_volume_wei: str
     confirmed_volume_wei: str
@@ -22,18 +30,24 @@ class PaymentVolumeSummary(BaseModel):
 
 
 class DailyVolume(BaseModel):
+    """Payment count and volume for a single day."""
+
     date: str
     count: int
     volume_wei: str
 
 
 class ChainBreakdown(BaseModel):
+    """Payment count and volume for a single blockchain."""
+
     chain: str
     count: int
     volume_wei: str
 
 
 class WebhookStats(BaseModel):
+    """Aggregated webhook delivery health metrics."""
+
     total_attempts: int
     successful: int
     failed: int
@@ -43,6 +57,8 @@ class WebhookStats(BaseModel):
 
 
 class TransactionStats(BaseModel):
+    """Payment-event counts bucketed by lifecycle state."""
+
     total_transactions: int
     confirmed: int
     pending: int
@@ -50,6 +66,8 @@ class TransactionStats(BaseModel):
 
 
 class ApiKeyStats(BaseModel):
+    """Aggregated API key usage metrics."""
+
     total_keys: int
     active_keys: int
     revoked_keys: int
@@ -57,6 +75,8 @@ class ApiKeyStats(BaseModel):
 
 
 class DashboardSummary(BaseModel):
+    """Full dashboard payload generated at a point in time."""
+
     generated_at: datetime.datetime
     payments: PaymentVolumeSummary
     transactions: TransactionStats
@@ -65,6 +85,8 @@ class DashboardSummary(BaseModel):
 
 
 class TransactionDetail(BaseModel):
+    """One payment-event row shown in the admin detail view."""
+
     id: str
     tx_hash: str
     block_number: Optional[int]
@@ -72,6 +94,8 @@ class TransactionDetail(BaseModel):
     status: str
 
 class WebhookAttemptDetail(BaseModel):
+    """One webhook delivery attempt row shown in the admin detail view."""
+
     id: str
     event_type: str
     webhook_url: str
@@ -84,6 +108,8 @@ class WebhookAttemptDetail(BaseModel):
 
 
 class PaymentDetail(BaseModel):
+    """Full payment detail for the admin detail view."""
+
     id: str
     chain: str
     api_key_name: str

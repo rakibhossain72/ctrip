@@ -1,3 +1,7 @@
+"""
+Analytics API endpoints for payment and webhook statistics.
+"""
+
 from typing import List, Optional
 from uuid import UUID
 

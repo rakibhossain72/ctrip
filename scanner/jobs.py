@@ -1,3 +1,7 @@
+"""
+ARQ job definitions for block scanning and event processing.
+"""
+
 from __future__ import annotations
 
 import logging
@@ -33,7 +37,7 @@ async def check_native_transactions(ctx, chain_id: int, blocks: list[int]) -> No
             transactions = await blockchain.get_block_transactions(
                 chain_id, block_number
             )
-        except Exception:
+        except Exception:  # pylint: disable=broad-exception-caught
             logger.exception(
                 "Failed to fetch block %s on chain %s", block_number, chain_id
             )
@@ -107,7 +111,7 @@ async def check_erc20_transfer_logs(
             token_addresses=[token],
             to_addresses=list(watched),
         )
-    except Exception:
+    except Exception:  # pylint: disable=broad-exception-caught
         logger.exception(
             "Failed to fetch transfer logs for token %s chain %s", token, chain_id
         )

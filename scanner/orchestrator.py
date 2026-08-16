@@ -1,3 +1,7 @@
+"""
+Cron entrypoints for block scanning, cursor pruning, and historical backfill.
+"""
+
 from __future__ import annotations
 
 import asyncio
@@ -17,7 +21,7 @@ async def _scan_chain(ctx, chain_id: int, spec: dict) -> None:
 
     try:
         current_block = await blockchain.get_current_block(chain_id)
-    except Exception:
+    except Exception:  # pylint: disable=broad-exception-caught
         logger.exception("Failed to get current block for chain %s", chain_id)
         return
 

@@ -27,10 +27,12 @@ Options (override via env vars or command-line flags):
 python example/create_payment.py
 
 # point at a remote server
-python example/create_payment.py --base-url https://api.example.com --username admin --password s3cr3t
+python example/create_payment.py \
+    --base-url https://api.example.com --username admin --password s3cr3t
 
 # pay on sepolia (chain_id 11155111)
-python example/create_payment.py --chain-id 11155111 --rpc-url https://eth-sepolia.api.onfinality.io/public
+python example/create_payment.py \
+    --chain-id 11155111 --rpc-url https://eth-sepolia.api.onfinality.io/public
 
 # ERC-20 payment
 python example/create_payment.py --token 0xContractAddress --amount 1000000
@@ -47,7 +49,6 @@ import sys
 import time
 
 import requests
-import web3 as Web3Module
 from web3 import Web3
 
 #
@@ -80,19 +81,38 @@ BOLD   = "\033[1m"
 RESET  = "\033[0m"
 
 
-def ok(msg: str)   -> None: print(f"{GREEN}✓  {msg}{RESET}")
-def info(msg: str) -> None: print(f"{CYAN}->  {msg}{RESET}")
-def warn(msg: str) -> None: print(f"{YELLOW}⚠  {msg}{RESET}")
-def err(msg: str)  -> None: print(f"{RED}✗  {msg}{RESET}", file=sys.stderr)
+def ok(msg: str) -> None:
+    """Print a green success message."""
+    print(f"{GREEN}✓  {msg}{RESET}")
+
+
+def info(msg: str) -> None:
+    """Print a cyan info message."""
+    print(f"{CYAN}->  {msg}{RESET}")
+
+
+def warn(msg: str) -> None:
+    """Print a yellow warning message."""
+    print(f"{YELLOW}⚠  {msg}{RESET}")
+
+
+def err(msg: str) -> None:
+    """Print a red error message to stderr."""
+    print(f"{RED}✗  {msg}{RESET}", file=sys.stderr)
+
+
 def step(n: int, title: str) -> None:
+    """Print a numbered step header."""
     print(f"\n{BOLD}[{n}] {title}{RESET}")
 
 
 def pretty(data: dict) -> None:
+    """Pretty-print a dictionary as JSON."""
     print(json.dumps(data, indent=2, default=str))
 
 
 def die(msg: str, code: int = 1) -> None:
+    """Print an error and exit the process."""
     err(msg)
     sys.exit(code)
 
@@ -106,6 +126,7 @@ SESSION.headers.update({"Content-Type": "application/json", "Accept": "applicati
 
 
 def post(url: str, payload: dict, *, headers: dict | None = None, label: str = "POST") -> dict:
+    """Send a JSON POST request and return the parsed response."""
     try:
         r = SESSION.post(url, json=payload, headers=headers, timeout=10)
     except requests.ConnectionError:
@@ -117,6 +138,7 @@ def post(url: str, payload: dict, *, headers: dict | None = None, label: str = "
 
 
 def get(url: str, *, headers: dict | None = None, label: str = "GET") -> dict:
+    """Send a JSON GET request and return the parsed response."""
     try:
         r = SESSION.get(url, headers=headers, timeout=10)
     except requests.ConnectionError:
@@ -302,22 +324,26 @@ def poll_payment(
 #
 
 def parse_args() -> argparse.Namespace:
+    """Parse command-line arguments for the payment simulation."""
     p = argparse.ArgumentParser(
         description="End-to-end payment simulation",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     p.add_argument("--base-url",    default=DEFAULTS["base_url"],    help="API base URL")
     p.add_argument("--rpc-url",     default=DEFAULTS["rpc_url"],     help="EVM RPC URL")
-    p.add_argument("--username",    default=DEFAULTS["username"],     help="Admin username")
-    p.add_argument("--password",    default=DEFAULTS["password"],     help="Admin password")
-    p.add_argument("--sender-key",  default=DEFAULTS["sender_key"],  help="Sender private key (hex)")
-    p.add_argument("--amount",      default=DEFAULTS["amount"],      type=int, help="Payment amount in wei")
-    p.add_argument("--chain-id",    default=DEFAULTS["chain_id"],    type=int,
-                   help="Blockchain identifier (31337 anvil, 11155111 sepolia)")
-    p.add_argument("--token",       default=None,                    help="ERC-20 contract address (omit for native)")
-    p.add_argument("--key-name",    default="example-script",        help="Label for the generated API key")
-    p.add_argument("--no-tx",       action="store_true",             help="Skip sending the on-chain transaction")
-    p.add_argument("--poll-timeout",default=120, type=int,           help="Seconds to wait for payment detection")
+    p.add_argument("--username", default=DEFAULTS["username"], help="Admin username")
+    p.add_argument("--password", default=DEFAULTS["password"], help="Admin password")
+    p.add_argument(
+        "--chain-id", default=DEFAULTS["chain_id"], type=int,
+        help="Blockchain identifier (31337 anvil, 11155111 sepolia)",
+    )
+    p.add_argument("--token", default=None, help="ERC-20 contract address (omit for native)")
+    p.add_argument("--key-name", default="example-script", help="Label for the generated API key")
+    p.add_argument("--no-tx", action="store_true", help="Skip sending the on-chain transaction")
+    p.add_argument(
+        "--poll-timeout", default=120, type=int,
+        help="Seconds to wait for payment detection",
+    )
     return p.parse_args()
 
 
@@ -326,6 +352,7 @@ def parse_args() -> argparse.Namespace:
 #
 
 def main() -> None:
+    """Run the end-to-end payment simulation."""
     args = parse_args()
 
     print(f"\n{BOLD}{'─' * 60}")

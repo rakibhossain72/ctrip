@@ -97,7 +97,6 @@ class EVMClient:
         back to the start (all endpoints exhausted in this attempt).
         """
         next_index = (self._active_index + 1) % len(self.rpc_urls)
-        rotated = next_index != 0 or len(self.rpc_urls) == 1
         self._active_index = next_index
         if next_index != 0:
             logger.warning(

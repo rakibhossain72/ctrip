@@ -44,6 +44,7 @@ def _hex_log() -> dict:
 
 
 def test_decode_erc20_bytes_form():
+    """Decode an ERC-20 Transfer log with bytes-typed fields."""
     ev = decode_erc20_transfer(_bytes_log(), 11155111)
     assert ev is not None
     assert ev.token == TOKEN
@@ -57,12 +58,14 @@ def test_decode_erc20_bytes_form():
 
 
 def test_decode_erc20_hex_str_form():
+    """Decode an ERC-20 Transfer log with hex-string fields."""
     ev = decode_erc20_transfer(_hex_log(), 1)
     assert ev is not None
     assert ev.to == TO and ev.amount == AMOUNT
 
 
 def test_decode_rejects_malformed():
+    """Malformed logs should return None."""
     assert decode_erc20_transfer({"topics": []}, 1) is None
     assert decode_erc20_transfer({"topics": ["0x" + "0" * 66]}, 1) is None
     assert (
@@ -72,6 +75,7 @@ def test_decode_rejects_malformed():
 
 
 def test_topic_helpers_roundtrip():
+    """Topic encoding/decoding should be reversible."""
     assert topic_from_address(TO) == "0x" + "0" * 24 + TO[2:]
     assert addresses_to_topics([TO]) == [topic_from_address(TO)]
     assert addresses_to_topics([]) is None
@@ -83,6 +87,7 @@ def test_topic_helpers_roundtrip():
 
 
 def test_match_native_tx():
+    """Native tx matching should find watched recipient addresses."""
     watched = {TO}
     assert match_native_tx({"to": TO, "value": 1}, watched) == TO
     assert match_native_tx({"to": TO.upper()}, watched) == TO
@@ -92,6 +97,7 @@ def test_match_native_tx():
 
 
 def test_normalize_address():
+    """Address normalization should lowercase and strip prefixes."""
     assert normalize_address(TO) == TO
     assert normalize_address(TO.upper()) == TO
     assert normalize_address(bytes.fromhex(TO[2:])) == TO

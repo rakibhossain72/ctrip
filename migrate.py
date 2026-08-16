@@ -14,6 +14,7 @@ Usage:
     python migrate.py stamp head                # Mark DB as up-to-date without running migrations
 """
 
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -21,7 +22,6 @@ from pathlib import Path
 
 def run_alembic_command(args: list[str]) -> int:
     """Run an alembic command and return the exit code."""
-    import shutil
     if shutil.which("uv"):
         cmd = ["uv", "run", "alembic"] + args
     else:

@@ -1,3 +1,7 @@
+"""
+Load and cache contract ABIs from JSON files.
+"""
+
 import json
 import pathlib
 from functools import lru_cache

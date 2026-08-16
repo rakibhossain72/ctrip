@@ -1,3 +1,7 @@
+"""
+Example script demonstrating the RotatingRPCManager with HTTP and WSS endpoints.
+"""
+
 import asyncio
 import logging
 
@@ -7,6 +11,7 @@ from app.schemas.blockchain import ProviderType
 
 #  Example
 async def main():
+    """Run a demo of HTTP and WSS calls plus a new-heads subscription."""
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s %(levelname)-8s %(message)s",
@@ -14,10 +19,10 @@ async def main():
 
     endpoints = [
         # HTTP pool
-        RPCEndpoint("https://eth-sepolia.api.onfinality.io/public", ProviderType.HTTP, weight=2),
-        RPCEndpoint("https://api.zan.top/eth-sepolia", ProviderType.HTTP, weight=1),
+        RPCEndpoint("https://eth-sepolia.api.onfinality.io/public", ProviderType.HTTP, 2),
+        RPCEndpoint("https://api.zan.top/eth-sepolia", ProviderType.HTTP, 1),
         # # WSS pool
-        RPCEndpoint("wss://mainnet.gateway.tenderly.co", ProviderType.WSS, weight=1),
+        RPCEndpoint("wss://mainnet.gateway.tenderly.co", ProviderType.WSS, 1),
     ]
 
     async with RotatingRPCManager(endpoints, max_retries=3) as manager:

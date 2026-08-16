@@ -1,3 +1,7 @@
+"""
+Utility helpers for the worker processes.
+"""
+
 from __future__ import annotations
 
 from app.blockchain.chains import (

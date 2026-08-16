@@ -1,3 +1,7 @@
+"""
+Batch EVM call execution via Multicall3 or raw JSON-RPC batch requests.
+"""
+
 import asyncio
 from typing import Any
 
@@ -11,6 +15,8 @@ from app.blockchain.manager import get_w3
 
 
 class Multicall:
+    """Batch EVM calls using Multicall3 aggregate3 or JSON-RPC batch fallback."""
+
     DEFAULT_BATCH_SIZE = 100
 
     def __init__(
@@ -134,15 +140,16 @@ class Multicall:
         if self._use_multicall:
             # aggregate3 already returns (success, bytes) tuples
             return await self._execute_aggregate3(calls)
-        else:
-            # Normalise RPC batch results to the same tuple shape.
-            # We have no per-call revert info from RPC, so treat
-            # a None result (node error / empty return) as failure.
-            raw = await self._execute_rpc_batch(calls, block=block)
-            return [(data is not None, data or b"") for data in raw]
+
+        # Normalise RPC batch results to the same tuple shape.
+        # We have no per-call revert info from RPC, so treat
+        # a None result (node error / empty return) as failure.
+        raw = await self._execute_rpc_batch(calls, block=block)
+        return [(data is not None, data or b"") for data in raw]
 
     #  Public: balance helpers
     async def get_native_balances(self, addrs: list[str]) -> list[list]:
+        """Return [[address, balance_wei], ...] for native token balances."""
         valid_addresses: list[str] = []
         calls: list[dict[str, Any]] = []
 
@@ -199,6 +206,7 @@ class Multicall:
     async def get_erc20_balances(
         self, token_address: str, addrs: list[str]
     ) -> list[list]:
+        """Return [[address, balance_raw], ...] for an ERC-20 token."""
         token_checksummed = to_checksum_address(token_address)
         valid_addresses: list[str] = []
         calls: list[dict[str, Any]] = []
@@ -234,6 +242,7 @@ class Multicall:
 
 
 async def main():
+    """Demo the Multicall helper against Sepolia."""
     sepolia_multicall = "0xcA11bde05977b3631167028862bE2a173976CA11"
     link_token_sepolia = "0x779877A7B0D9E8603169DdbD7836e478b4624789"
 

@@ -17,7 +17,7 @@ from app.db.base import Base
 from app.db.engine import DATABASE_URL
 
 # Import all models to ensure they're registered with Base.metadata
-from app.db.models import *  # noqa: F401,F403
+from app.db.models import *  # noqa: F401,F403  # pylint: disable=wildcard-import,unused-wildcard-import
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

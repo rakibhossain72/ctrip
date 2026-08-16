@@ -44,7 +44,7 @@ class PaymentEventType(enum.Enum):
 
 
 class PaymentEvent(Base):
-    __tablename__ = "payment_events"
+    """Append-only record of an on-chain transfer matched to a payment."""
     __table_args__ = (
         UniqueConstraint("tx_hash", "log_index", name="ux_payment_events_tx_log"),
         CheckConstraint(

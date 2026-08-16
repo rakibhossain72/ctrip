@@ -1,3 +1,7 @@
+"""
+Payment lifecycle helpers: confirmation and expiration checks.
+"""
+
 from __future__ import annotations
 
 import logging
@@ -35,7 +39,7 @@ async def confirm_payments(
     blockchain = ctx["blockchain_service"]
     try:
         latest_block = await blockchain.get_current_block(chain_id)
-    except Exception:
+    except Exception:  # pylint: disable=broad-exception-caught
         logger.exception("Error getting latest block for chain %s", chain_id)
         return 0
 

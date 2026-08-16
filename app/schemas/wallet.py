@@ -1,10 +1,14 @@
+"""
+Dataclass containers for derived wallets and signed messages.
+"""
+
 from dataclasses import dataclass
 
 
 # Data containers
 @dataclass(frozen=True)
 class DerivedWallet:
-    address: str
+    """Deterministically derived wallet (address, private key, metadata)."""
     private_key: str
     payment_id: str
     key_version: int
@@ -18,7 +22,7 @@ class DerivedWallet:
 
 @dataclass
 class SignedMessage:
-    message: str
+    """EIP-191 signed message with signature and signer address."""
     signature: str
     signer_address: str
     message_hash: str

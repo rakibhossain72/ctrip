@@ -21,7 +21,7 @@ MERCHANT_ROLE = "merchant"
 
 
 class User(TimestampMixin, Base):
-    __tablename__ = "users"
+    """Unified user row for both admin and merchant accounts."""
 
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
     username: Mapped[str] = mapped_column(String(255), nullable=False, unique=True)

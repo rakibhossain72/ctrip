@@ -5,7 +5,7 @@ See `app/blockchain/chains.py` for the supported chains.yaml schema.
 """
 
 import os
-from typing import Dict, List
+from typing import Dict
 
 from web3 import AsyncWeb3
 

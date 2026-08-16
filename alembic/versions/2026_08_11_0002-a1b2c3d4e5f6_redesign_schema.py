@@ -32,7 +32,7 @@ def _dialect():
 def _json():
     """JSONB on PostgreSQL, plain JSON elsewhere (SQLite-compatible)."""
     if _dialect() == "postgresql":
-        from sqlalchemy.dialects.postgresql import JSONB
+        from sqlalchemy.dialects.postgresql import JSONB  # pylint: disable=import-outside-toplevel
 
         return JSONB()
     return sa.JSON()
@@ -51,7 +51,7 @@ def _drop_if_exists(tables: list[str]) -> None:
 
 
 def upgrade() -> None:
-    # --- Drop legacy schema (child -> parent order) -------------------------
+    """Apply the schema redesign: drop legacy tables and create new ones."""
     _drop_if_exists(
         [
             "transactions",
@@ -270,7 +270,7 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    # Drop the redesigned schema in child -> parent FK order.
+    """Drop the redesigned schema to revert to the legacy layout."""
     _drop_if_exists(
         [
             "payment_events",

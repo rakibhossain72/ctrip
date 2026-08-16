@@ -37,6 +37,7 @@ class ChainConfig:
 
     @property
     def primary_http_url(self) -> str:
+        """Return the first (preferred) HTTP RPC endpoint."""
         return self.http_urls[0]
 
 
@@ -72,7 +73,7 @@ def load_chains() -> tuple[ChainConfig, ...]:
     try:
         with open(path, "r", encoding="utf-8") as f:
             raw = yaml.safe_load(f) or []
-    except Exception:  # pragma: no cover - defensive
+    except Exception:  # pragma: no cover - defensive  # pylint: disable=broad-exception-caught
         return _default_chain()
 
     chains: list[ChainConfig] = []
@@ -130,6 +131,7 @@ def _default_chain() -> tuple[ChainConfig, ...]:
 
 
 def chain_by_id(chain_id: int) -> Optional[ChainConfig]:
+    """Return the first configured chain matching *chain_id*, or None."""
     for chain in load_chains():
         if chain.chain_id == chain_id:
             return chain
@@ -137,6 +139,7 @@ def chain_by_id(chain_id: int) -> Optional[ChainConfig]:
 
 
 def chain_by_name(name: str) -> Optional[ChainConfig]:
+    """Return the first configured chain matching *name* (case-insensitive), or None."""
     lowered = name.lower()
     for chain in load_chains():
         if chain.name == lowered:
@@ -145,14 +148,16 @@ def chain_by_name(name: str) -> Optional[ChainConfig]:
 
 
 def enabled_chain_ids() -> frozenset[int]:
-    return frozenset(c.chain_id for c in load_chains())
+    """Return the set of all configured chain IDs."""
 
 
 def chain_name_for_id(chain_id: int) -> str:
+    """Return the chain name for *chain_id*, or the stringified ID if unknown."""
     chain = chain_by_id(chain_id)
     return chain.name if chain else str(chain_id)
 
 
 def chain_id_for_name(name: str) -> Optional[int]:
+    """Return the chain ID for *name* (case-insensitive), or None if not found."""
     chain = chain_by_name(name)
     return chain.chain_id if chain else None

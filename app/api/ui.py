@@ -1,3 +1,7 @@
+"""
+Public UI API endpoints for rendering payment pages.
+"""
+
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
@@ -21,10 +25,10 @@ async def payment_page(
     # Validate payment_id format
     try:
         payment_uuid = UUID(payment_id)
-    except ValueError:
+    except ValueError as exc:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid payment ID format"
-        )
+        ) from exc
 
     # get from db
     res = await db.execute(select(Payment).where(Payment.id == payment_uuid))

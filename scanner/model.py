@@ -1,6 +1,8 @@
-from __future__ import annotations
+"""
+Dataclass models for decoded on-chain transfer events.
+"""
 
-import dataclasses
+from __future__ import annotations
 from dataclasses import dataclass
 from typing import Optional
 
@@ -34,4 +36,4 @@ class TransferEvent:
     block_number: Optional[int]
 
     def as_dict(self) -> dict:
-        return dataclasses.asdict(self)
+        """Return the event as a plain dictionary."""

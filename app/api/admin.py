@@ -1,3 +1,7 @@
+"""
+Admin API endpoints for manual operations and API key management.
+"""
+
 from typing import List
 from uuid import UUID
 

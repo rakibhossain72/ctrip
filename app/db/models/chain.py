@@ -17,7 +17,7 @@ from app.db.models._timestamps import utcnow
 
 
 class Chain(Base):
-    __tablename__ = "chains"
+    """Reference row for a configured blockchain network."""
 
     id: Mapped[int] = mapped_column(primary_key=True)  # EVM chain id
     name: Mapped[str] = mapped_column(String(50), nullable=False, unique=True)
@@ -26,8 +26,12 @@ class Chain(Base):
     rpc_url: Mapped[str] = mapped_column(String(500), nullable=False)
     ws_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
     poa: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
-    created_at: Mapped[object] = mapped_column(DateTime, nullable=False, default=utcnow)
-    updated_at: Mapped[object] = mapped_column(DateTime, nullable=False, default=utcnow, onupdate=utcnow)
+    created_at: Mapped[object] = mapped_column(
+        DateTime, nullable=False, default=utcnow
+    )
+    updated_at: Mapped[object] = mapped_column(
+        DateTime, nullable=False, default=utcnow, onupdate=utcnow
+    )
 
     def __repr__(self) -> str:  # pragma: no cover - debug aid
         return f"<Chain id={self.id} name={self.name!r}>"

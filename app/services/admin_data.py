@@ -96,7 +96,11 @@ async def _event_stats(db: AsyncSession) -> TransactionStats:
 async def webhook_stats(db: AsyncSession) -> WebhookStats:
     """Webhook delivery health — success rate, failures, pending retries."""
     rows = (await db.execute(
-        select(WebhookAttempt.status, func.count().label("cnt"), func.sum(WebhookAttempt.retry_count).label("retries"))
+        select(
+            WebhookAttempt.status,
+            func.count().label("cnt"),
+            func.sum(WebhookAttempt.retry_count).label("retries"),
+        )
         .group_by(WebhookAttempt.status)
     )).all()
 
@@ -131,7 +135,16 @@ async def dashboard_summary(db: AsyncSession) -> DashboardSummary:
         select(
             func.count().label("total"),
             func.sum(case((ApiKey.is_active, 1), else_=0)).label("active"),
-            func.sum(case((ApiKey.last_used_at >= (now_utc() - datetime.timedelta(hours=24)), 1), else_=0)).label("recent"),
+            func.sum(
+                case(
+                    (
+                        ApiKey.last_used_at
+                        >= (now_utc() - datetime.timedelta(hours=24)),
+                        1,
+                    ),
+                    else_=0,
+                )
+            ).label("recent"),
         )
     )).one()
     total_keys = key_rows.total or 0
@@ -171,19 +184,33 @@ async def daily_volume(db: AsyncSession, days: int = 30) -> List[DailyVolume]:
         .order_by(func.date(Payment.created_at))
     )).all()
 
-    return [DailyVolume(date=str(r.day), count=r.cnt, volume_wei=wei_to_eth_str(r.vol or 0)) for r in rows]
+    return [
+        DailyVolume(
+            date=str(r.day),
+            count=r.cnt,
+            volume_wei=wei_to_eth_str(r.vol or 0),
+        )
+        for r in rows
+    ]
 
 
 async def payments_by_chain(db: AsyncSession) -> List[ChainBreakdown]:
     """Breakdown of payment count and volume per blockchain."""
     rows = (await db.execute(
-        select(Chain.name, func.count().label("cnt"), func.sum(Payment.amount_raw).label("vol"))
+        select(
+            Chain.name,
+            func.count().label("cnt"),
+            func.sum(Payment.amount_raw).label("vol"),
+        )
         .join(Chain, Payment.chain_id == Chain.id)
         .group_by(Chain.name)
         .order_by(func.count().desc())
     )).all()
 
-    return [ChainBreakdown(chain=r.name, count=r.cnt, volume_wei=wei_to_eth_str(r.vol or 0)) for r in rows]
+    return [
+        ChainBreakdown(chain=r.name, count=r.cnt, volume_wei=wei_to_eth_str(r.vol or 0))
+        for r in rows
+    ]
 
 
 async def recent_payments(

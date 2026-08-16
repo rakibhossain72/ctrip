@@ -21,7 +21,7 @@ from app.db.types import json_type
 
 
 class PaymentStateChange(Base):
-    __tablename__ = "payment_state_changes"
+    """Immutable audit log entry for a payment status transition."""
     __table_args__ = (
         Index("ix_state_changes_payment_time", "payment_id", "changed_at"),
         Index("ix_state_changes_time", "changed_at"),

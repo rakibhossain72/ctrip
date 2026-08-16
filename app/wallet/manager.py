@@ -1,3 +1,10 @@
+"""
+Deterministic Ethereum wallet derivation and key management.
+
+Wallets are derived from a server secret and payment identifier using HKDF,
+giving reproducible addresses without storing private keys.
+"""
+
 import hashlib
 import hmac
 import secrets
@@ -109,7 +116,7 @@ class WalletKeyManager:
             signable = encode_defunct(text=message)
             recovered = Account.recover_message(signable, signature=signature)
             return recovered.lower() == expected_address.lower()
-        except Exception:
+        except (ValueError, TypeError):
             return False
 
     def rotate_wallet(

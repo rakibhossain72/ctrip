@@ -8,6 +8,7 @@ from app.db.async_session import AsyncSessionLocal as async_session
 from app.services.blockchain.sweeper import SweeperService
 from app.wallet import WalletKeyManager
 from app.workers.utils import get_enabled_chains
+from app.blockchain.chains import chain_by_name
 
 
 async def sweep_funds(ctx):  # pylint: disable=unused-argument
@@ -54,8 +55,6 @@ async def sweep_specific_address(
     """
     try:
         logger.info("Sweeping address %s on %s", address, chain_name)
-
-        from app.blockchain.chains import chain_by_name
 
         chain = chain_by_name(chain_name)
         if chain is None:

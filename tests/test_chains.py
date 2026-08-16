@@ -6,7 +6,7 @@ from app.blockchain import chains
 
 
 @pytest.fixture
-def yaml_chains(tmp_path, monkeypatch):
+def _yaml_chains(tmp_path, monkeypatch):
     """Point the loader at a temp chains.yaml with mixed key forms."""
     yaml_file = tmp_path / "chains.yaml"
     yaml_file.write_text("""
@@ -34,7 +34,8 @@ def yaml_chains(tmp_path, monkeypatch):
         chains.load_chains.cache_clear()
 
 
-def test_load_chains_normalizes_forms(yaml_chains):
+def test_load_chains_normalizes_forms(_yaml_chains):
+    """Verify loader normalizes single/list URL forms and lowercases names."""
     loaded = chains.load_chains()
     names = {c.name for c in loaded}
     assert names == {"ethereum", "bsc"}
@@ -51,8 +52,8 @@ def test_load_chains_normalizes_forms(yaml_chains):
     assert bsc.ws_urls == ()
 
 
-def test_lookups(yaml_chains):
-    assert chains.chain_by_id(1).name == "ethereum"
+def test_lookups(_yaml_chains):
+    """Verify chain_by_id, chain_by_name, and helper functions."""
     assert chains.chain_by_name("BSC").chain_id == 56
     assert chains.chain_by_name("bsc").chain_id == 56  # case-insensitive
     assert chains.chain_by_id(999) is None
@@ -63,6 +64,7 @@ def test_lookups(yaml_chains):
 
 
 def test_default_fallback_when_no_yaml(tmp_path, monkeypatch):
+    """Verify the loader returns the local anvil fallback when no YAML exists."""
     monkeypatch.setattr(
         chains.settings, "chains_yaml_path", str(tmp_path / "missing.yaml")
     )

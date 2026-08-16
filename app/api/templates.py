@@ -41,6 +41,7 @@ def fmt_amount(value) -> str:
 
 
 def fmt_int(value) -> str:
+    """Thousands-separate integer values, pass through invalid input."""
     try:
         return format(int(value or 0), ",")
     except (TypeError, ValueError):

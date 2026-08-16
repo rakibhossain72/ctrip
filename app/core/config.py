@@ -58,7 +58,10 @@ class Settings(BaseSettings):
                     for chain in chains_list:
                         rpc_url = chain.get("rpc_url")
                         if rpc_url:
-                            chain["rpc_url"] = rpc_url.replace("localhost", "host.docker.internal").replace("127.0.0.1", "host.docker.internal")
+                            chain["rpc_url"] = (
+                                rpc_url.replace("localhost", "host.docker.internal")
+                                .replace("127.0.0.1", "host.docker.internal")
+                            )
                 return chains_list
         except Exception as e:  # pylint: disable=broad-exception-caught
             print(f"Error loading chains.yaml: {e}")

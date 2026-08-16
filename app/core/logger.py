@@ -50,8 +50,8 @@ def setup_logging(level=logging.INFO):
 
 
     # Logger for TransferListener
-    listener_logger = logging.getLogger("transfer_listener")
-    listener_logger.setLevel(logging.INFO)
+    _listener_logger = logging.getLogger("transfer_listener")
+    _listener_logger.setLevel(logging.INFO)
 
 
     # Silence arq worker logs

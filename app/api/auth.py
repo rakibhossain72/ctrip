@@ -1,3 +1,7 @@
+"""
+Authentication API endpoints for login, refresh, and logout.
+"""
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -37,7 +41,10 @@ async def refresh(body: RefreshRequest):
     """Exchange a valid refresh token for a new access + refresh token pair."""
     subject = decode_token(body.refresh_token, expected_type="refresh")
     if not subject:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired refresh token")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired refresh token",
+        )
 
     return TokenResponse(
         access_token=create_access_token(subject=subject),

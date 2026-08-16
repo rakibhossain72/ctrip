@@ -1,6 +1,8 @@
-from __future__ import annotations
+"""
+Constants used across the scanner package.
+"""
 
-NATIVE_ASSET = "native"
+from __future__ import annotations
 
 # keccak256("Transfer(address,address,uint256)")
 ERC20_TRANSFER_TOPIC = (

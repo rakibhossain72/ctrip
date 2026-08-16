@@ -1,0 +1,22 @@
+[MASTER]
+
+[MESSAGES CONTROL]
+disable=
+    invalid-name,
+    too-few-public-methods,
+    too-many-instance-attributes,
+    too-many-arguments,
+    too-many-positional-arguments,
+    no-member,
+    not-callable,
+    unsubscriptable-object,
+    abstract-method,
+    invalid-envvar-default,
+    no-value-for-parameter,
+    unexpected-keyword-arg
+
+[FORMAT]
+max-line-length=100
+
+[DESIGN]
+max-positional-arguments=10

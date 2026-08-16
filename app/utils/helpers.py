@@ -21,7 +21,7 @@ def wei_to_eth_str(wei_val) -> str:
         return "0"
     try:
         dec_val = Decimal(str(wei_val))
-    except Exception:
+    except (TypeError, ValueError):
         dec_val = Decimal(wei_val)
     eth = dec_val / Decimal("1000000000000000000")
     s = f"{eth:.18f}".rstrip("0").rstrip(".")

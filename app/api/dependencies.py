@@ -118,7 +118,10 @@ async def require_api_key(key: str = Security(_api_key_scheme)) -> ApiKey:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid API key")
 
         if not matched.is_active:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="API key has been revoked")
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="API key has been revoked",
+            )
 
         # Lazy last_used_at — throttled to avoid write amplification (M5).
         if matched.should_refresh_last_used(now_utc()):

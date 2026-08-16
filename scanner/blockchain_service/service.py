@@ -1,3 +1,10 @@
+"""
+Blockchain-facing scanning facade.
+
+Wraps one EVMClient per configured chain, giving the scanner a small stable
+surface for current block, full blocks, and ERC-20 Transfer logs.
+"""
+
 from __future__ import annotations
 
 from typing import Iterable, Optional
@@ -29,17 +36,20 @@ class BlockchainService:
         }
 
     def client(self, chain_id: int) -> EVMClient:
+        """Return the EVMClient for a configured chain, or raise if missing."""
         try:
             return self._clients[chain_id]
         except KeyError:
             raise ValueError(f"Chain {chain_id} is not configured") from None
 
     async def get_current_block(self, chain_id: int) -> int:
+        """Return the latest mined block number for a chain."""
         return await self.client(chain_id).get_latest_block()
 
     async def get_block_transactions(
         self, chain_id: int, block_number: int
     ) -> list[dict]:
+        """Return the transactions included in a specific block."""
         block = await self.client(chain_id).get_block(
             block_number, full_transactions=True
         )
@@ -55,6 +65,7 @@ class BlockchainService:
         to_addresses: Optional[Iterable[str]] = None,
         token_addresses: Optional[Iterable[str]] = None,
     ) -> list[dict]:
+        """Fetch ERC-20 Transfer logs matching the given filters."""
         filter_params: dict = {"fromBlock": from_block, "toBlock": to_block}
 
         token_list = list(token_addresses) if token_addresses else None
@@ -73,11 +84,12 @@ class BlockchainService:
         return await self.client(chain_id).get_logs(filter_params)
 
     async def close(self) -> None:
+        """Disconnect all cached WebSocket providers and free resources."""
         for client in self._clients.values():
             for w3 in client._w3_pool:  # pylint: disable=protected-access
                 disconnect = getattr(w3.provider, "disconnect", None)
                 if disconnect is not None:
                     try:
                         await disconnect()
-                    except Exception:  # pragma: no cover - best-effort cleanup
+                    except Exception:  # pylint: disable=broad-exception-caught  # pragma: no cover - best-effort cleanup
                         pass

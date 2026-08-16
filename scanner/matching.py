@@ -1,3 +1,9 @@
+"""
+Pure decode/match helpers for on-chain transfer events.
+
+No I/O — all functions operate on already-fetched dicts/logs.
+"""
+
 from __future__ import annotations
 
 from typing import Iterable, Optional, Union

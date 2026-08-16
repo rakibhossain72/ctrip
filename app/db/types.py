@@ -14,12 +14,13 @@ from enum import Enum
 from typing import Type
 
 from sqlalchemy import JSON, String
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.types import TypeDecorator
 
 from app.db.engine import ASYNC_DATABASE_URL
 
 
-class StringEnum(TypeDecorator):
+class StringEnum(TypeDecorator):  # pylint: disable=too-many-ancestors
     """Persist ``enum.value`` in a VARCHAR column, round-tripping back to the
     enum instance on read. Backed by a native string type so CHECK constraints
     and plain string filters behave exactly like the schema documents them."""
@@ -47,7 +48,5 @@ class StringEnum(TypeDecorator):
 def json_type():
     """JSONB on PostgreSQL, plain JSON everywhere else (SQLite-compatible)."""
     if "postgresql" in ASYNC_DATABASE_URL:
-        from sqlalchemy.dialects.postgresql import JSONB  # pragma: no cover
-
         return JSONB()
     return JSON()

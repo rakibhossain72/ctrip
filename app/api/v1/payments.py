@@ -37,11 +37,13 @@ async def create_payment(
     wallet_manager: WalletKeyManager = Depends(get_wallet_manager),
     api_key=Depends(require_api_key),
 ):
+    """Create a new payment request and return the derived deposit address."""
     chain_cfg = chain_by_id(payment_req.chain_id)
     if chain_cfg is None:
         logger.warning(
-            f"Payment creation failed: unsupported chain_id '{payment_req.chain_id}' "
-            f"requested by API Key ID: {api_key.id}"
+            "Payment creation failed: unsupported chain_id '%s' requested by API Key ID: %s",
+            payment_req.chain_id,
+            api_key.id,
         )
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -52,7 +54,11 @@ async def create_payment(
     try:
         address = wallet_manager.derive_address(str(payment_id))
     except Exception as e:
-        logger.error(f"Failed to derive wallet address for payment {payment_id}: {e}")
+        logger.error(
+            "Failed to derive wallet address for payment %s: %s",
+            payment_id,
+            e,
+        )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to generate payment address.",
@@ -81,13 +87,20 @@ async def create_payment(
         await db.refresh(db_payment)
 
         logger.info(
-            f"Payment {payment_id} successfully created on chain '{chain_cfg.name}' "
-            f"with deposit address {address} (API Key ID: {api_key.id})"
+            "Payment %s successfully created on chain '%s' "
+            "with deposit address %s (API Key ID: %s)",
+            payment_id,
+            chain_cfg.name,
+            address,
+            api_key.id,
         )
     except Exception as e:
         await db.rollback()
         logger.error(
-            f"Database error persisting payment {payment_id}: {e}", exc_info=True
+            "Database error persisting payment %s: %s",
+            payment_id,
+            e,
+            exc_info=True,
         )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -108,7 +121,7 @@ async def get_payment(
     payment_id: UUID,
     db: AsyncSession = Depends(get_async_db),
 ):
-    # Single query with a JOIN — no N+1 (H1).
+    """Retrieve a single payment by ID, including the API key name."""
     res = await db.execute(
         select(Payment, ApiKey.name)
         .outerjoin(ApiKey, Payment.api_key_id == ApiKey.id)
@@ -116,11 +129,11 @@ async def get_payment(
     )
     row = res.first()
     if not row:
-        logger.warning(f"Payment lookup failed: ID {payment_id} not found.")
+        logger.warning("Payment lookup failed: ID %s not found.", payment_id)
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Payment not found"
         )
     db_payment, api_key_name = row
 
-    logger.debug(f"Payment metadata retrieved successfully for ID {payment_id}.")
+    logger.debug("Payment metadata retrieved successfully for ID %s.", payment_id)
     return PaymentRead.from_payment(db_payment, api_key_name=api_key_name)
